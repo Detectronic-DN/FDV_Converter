@@ -8,8 +8,9 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QTextEdit,
     QFileDialog,
+    QProgressBar,
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, Slot
 from src.logger.logger import Logger
 
 
@@ -73,13 +74,17 @@ class SiteDetailsPage(QWidget):
 
         # Site Details Display Section
         site_details_groupbox = QGroupBox("Site Details")
-        
         site_details_layout = QVBoxLayout()
 
-        site_details_layout.addWidget(QLabel("Site ID:"))
-        site_details_layout.addWidget(QLabel("Site Name:"))
-        site_details_layout.addWidget(QLabel("Start Timestamp:"))
-        site_details_layout.addWidget(QLabel("End Timestamp:"))
+        self.site_id_label = QLabel("Site ID: ")
+        self.site_name_label = QLabel("Site Name: ")
+        self.start_timestamp_label = QLabel("Start Timestamp: ")
+        self.end_timestamp_label = QLabel("End Timestamp: ")
+
+        site_details_layout.addWidget(self.site_id_label)
+        site_details_layout.addWidget(self.site_name_label)
+        site_details_layout.addWidget(self.start_timestamp_label)
+        site_details_layout.addWidget(self.end_timestamp_label)
 
         site_details_groupbox.setLayout(site_details_layout)
         layout.addWidget(site_details_groupbox)
@@ -111,6 +116,7 @@ class SiteDetailsPage(QWidget):
         logs_layout.addWidget(logs_label)
         logs_layout.addWidget(self.logs_display)
         layout.addLayout(logs_layout)
+    
 
         self.setLayout(layout)
 
@@ -128,9 +134,8 @@ class SiteDetailsPage(QWidget):
         """
         Opens a folder dialog to select a folder.
         """
-        folder_dialog = QFileDialog(self, "Select a Folder", "", "Folder (*)")
-        folder_dialog.setFileMode(QFileDialog.DirectoryOnly)
-        folder_dialog.exec()
+        folder_dialog = QFileDialog(self, "Select a Folder", "", "")
+        folder_dialog.setFileMode(QFileDialog.Directory)
         if folder_dialog.exec():
             folder_path = folder_dialog.selectedFiles()[0]
             self.folderpath = folder_path
@@ -140,10 +145,12 @@ class SiteDetailsPage(QWidget):
         Retrieves site details using the provided site ID.
         """
         site_id = self.site_id_input.text().strip()
-
         if site_id:
-            self.backend.download_csv_file(site_id, self.folderpath)
-
+            self.open_folder_dialog()
+            if self.folderpath:
+                self.backend.download_csv_file(site_id, self.folderpath)
+            else:
+                self.logs_display.append("Folder selection cancelled.")
         else:
             self.logs_display.append("Please enter a Site ID.")
 
@@ -152,7 +159,7 @@ class SiteDetailsPage(QWidget):
         Edits the timestamps using the backend.
         """
         self.backend.edit_timestamps(
-            self.start_timestamp_label.text(), self.end_timestamp_label.text()
+            self.startTimestamp, self.endTimestamp
         )
 
     def continue_to_next(self) -> None:
@@ -162,32 +169,44 @@ class SiteDetailsPage(QWidget):
         # Implement navigation logic here
         pass
 
+    @Slot(str, str, str, str)
     def on_site_details_retrieved(
         self, site_id, site_name, start_timestamp, end_timestamp
     ) -> None:
         """
         Handles the signal when site details are retrieved.
         """
-        self.site_id_label.setText(site_id)
-        self.site_name_label.setText(site_name)
-        self.start_timestamp_label.setText(start_timestamp)
-        self.end_timestamp_label.setText(end_timestamp)
+        self.site_id_label.setText(f"Site ID: {site_id}")
+        self.site_name_label.setText(f"Site Name: {site_name}")
+        self.start_timestamp_label.setText(f"Start Timestamp: {start_timestamp}")
+        self.end_timestamp_label.setText(f"End Timestamp: {end_timestamp}")
+        self.siteId = site_id
+        self.siteName = site_name
+        self.startTimestamp = start_timestamp
+        self.endTimestamp = end_timestamp
 
+    @Slot(str)
     def on_error_occurred(self, error_message) -> None:
         """
         Handles the signal when an error occurs.
         """
         self.logs_display.append(error_message)
 
+    @Slot(str)
     def on_log_message(self, msg) -> None:
         """
         Handles the signal for log messages.
         """
         self.logs_display.append(msg)
 
+    @Slot(bool)
     def on_busy_changed(self, is_busy) -> None:
         """
         Handles the signal when the busy state changes.
         """
         self.isBusy = is_busy
+        if is_busy:
+            self.logs_display.append("Processing, please wait...")
+        else:
+            self.logs_display.append("Processing complete.")
         # Implement UI changes for busy state if necessary

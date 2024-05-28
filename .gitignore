@@ -6,6 +6,8 @@ cache files
 __pycache__/
 *.pyc
 
-
-
-
+# files
+*.csv
+*.xlsx
+FDV/
+*.fdv
