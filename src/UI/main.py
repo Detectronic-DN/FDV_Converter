@@ -19,7 +19,7 @@ def main():
         main_window = MainWindow()
 
         # Connect the aboutToQuit signal to the backend cleanup method
-        app.aboutToQuit.connect(backend.clear_login_details)
+        app.aboutToQuit.connect(main_window.closeEvent)
 
         main_window.show()
 
