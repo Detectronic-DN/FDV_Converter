@@ -34,6 +34,7 @@ class SiteDetailsPage(QWidget):
         # Worker thread setup for downloading
         self.worker = Worker(backend)
         self.worker_thread = QThread()
+        self.worker_thread.quit()
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
@@ -45,6 +46,8 @@ class SiteDetailsPage(QWidget):
         # Worker thread setup for uploading
         self.upload_worker = UploadWorker(backend)
         self.upload_worker_thread = QThread()
+        self.upload_worker_thread.quit()
+
         self.upload_worker.moveToThread(self.upload_worker_thread)
         self.upload_worker_thread.start()
 

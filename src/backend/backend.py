@@ -107,9 +107,9 @@ class Backend(QObject):
     @Slot(str, str)
     def download_csv_file(self, site_id: str, folderpath: str):
         """Download CSV file for the given site ID."""
-        self.busy = True  # Set busy before starting the operation
+        self.busyChanged.emit(True)
         try:
-            self.log_info(f"Initiating download for site {site_id}")
+            self.emit_log_message(f"Downloading CSV for site {site_id} to {folderpath}")
             result = download_csv_file(
                 site_id, self.username, self.password, self.base_url, folderpath
             )
@@ -143,12 +143,12 @@ class Backend(QObject):
             self.log_error(error_message)
             self.errorOccurred.emit(error_message)
         finally:
-            self.busy = False  # Reset busy after the operation
+            self.busyChanged.emit(False)
 
     @Slot(str)
     def upload_csv_file(self, filepath: str):
         """Upload and process the given CSV file."""
-        self.busy = True  # Set busy before starting the operation
+        self.busyChanged.emit(True)
         try:
             self.log_info(f"Loading file from {filepath}")
             self._final_file_path = filepath
@@ -188,7 +188,7 @@ class Backend(QObject):
             self.log_error(error_message)
             self.errorOccurred.emit(error_message)
         finally:
-            self.busy = False  # Reset busy after the operation
+            self.busyChanged.emit(False)
 
     @Slot()
     def retrieveColumns(self):

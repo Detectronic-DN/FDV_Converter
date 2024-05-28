@@ -12,6 +12,9 @@ class UploadWorker(QObject):
         super().__init__()
         self.backend = backend
         self._connections_made = False
+        self.logMessage.connect(self.backend.logMessage)
+        self.siteDetailsRetrieved.connect(self.backend.siteDetailsRetrieved)
+        self.errorOccurred.connect(self.backend.errorOccurred)
 
         # Connect the upload_csv_file signal to the appropriate method
         self.upload_csv_file.connect(self.perform_upload_csv_file)
