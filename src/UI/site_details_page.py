@@ -1,3 +1,5 @@
+# src/UI/site_details_page.py
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -11,7 +13,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, Slot, QThread
 from src.logger.logger import Logger
-from worker_class import Worker
+from src.worker.api_worker import Worker
+from src.worker.file_worker import UploadWorker
 
 
 class SiteDetailsPage(QWidget):
@@ -26,7 +29,7 @@ class SiteDetailsPage(QWidget):
         self.backend = backend
         self.logger = Logger(__name__, emit_func=self.append_log)
 
-        # Worker thread setup
+        # Worker thread setup for downloading
         self.worker = Worker(backend)
         self.worker_thread = QThread()
         self.worker.moveToThread(self.worker_thread)
@@ -36,6 +39,17 @@ class SiteDetailsPage(QWidget):
         self.worker.siteDetailsRetrieved.connect(self.on_site_details_retrieved)
         self.worker.errorOccurred.connect(self.on_error_occurred)
         self.worker.busyChanged.connect(self.on_busy_changed)
+
+        # Worker thread setup for uploading
+        self.upload_worker = UploadWorker(backend)
+        self.upload_worker_thread = QThread()
+        self.upload_worker.moveToThread(self.upload_worker_thread)
+        self.upload_worker_thread.start()
+
+        self.upload_worker.logMessage.connect(self.on_log_message)
+        self.upload_worker.siteDetailsRetrieved.connect(self.on_site_details_retrieved)
+        self.upload_worker.errorOccurred.connect(self.on_error_occurred)
+        self.upload_worker.busyChanged.connect(self.on_busy_changed)
 
         self.siteId = ""
         self.siteName = ""
@@ -116,7 +130,7 @@ class SiteDetailsPage(QWidget):
 
         # Logs Display Section
         logs_layout = QVBoxLayout()
-        logs_label = QLabel("Logs")
+        logs_label = QLabel("Logs:")
         self.logs_display = QTextEdit()
         self.logs_display.setPlaceholderText("No logs available")
         self.logs_display.setReadOnly(True)
@@ -134,7 +148,8 @@ class SiteDetailsPage(QWidget):
         if file_dialog.exec():
             file_path = file_dialog.selectedFiles()[0]
             self.upload_input.setText(file_path)
-            self.backend.upload_csv_file(file_path)
+            # Run the CSV upload in a separate thread
+            self.upload_worker.upload_csv_file.emit(file_path)
 
     def open_folder_dialog(self) -> None:
         """
@@ -178,7 +193,7 @@ class SiteDetailsPage(QWidget):
     def on_back_button_clicked(self):
         """Handles the back button click event."""
         self.back_button_clicked.emit()
-        self.close_thread()
+        self.close_threads()
 
     @Slot(str, str, str, str)
     def on_site_details_retrieved(
@@ -220,6 +235,7 @@ class SiteDetailsPage(QWidget):
             self.logs_display.append("Processing, please wait...")
         else:
             self.logs_display.append("Processing complete.")
+        # Implement UI changes for busy state if necessary
 
     def append_log(self, log_message: str):
         """
@@ -227,8 +243,10 @@ class SiteDetailsPage(QWidget):
         """
         self.logs_display.append(log_message)
 
-    def close_thread(self):
-        """Closes the worker thread gracefully."""
+    def close_threads(self):
+        """Closes the worker threads gracefully."""
         self.worker_thread.quit()
         self.worker_thread.wait()
-        
+
+        self.upload_worker_thread.quit()
+        self.upload_worker_thread.wait()
