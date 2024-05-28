@@ -16,8 +16,8 @@ The FDV Converter Application is a comprehensive tool designed to handle and pro
 
 1. **Clone the repository**:
     ```sh
-    git clone https://github.com/Detectronic-DN/FDV_automation.git
-    cd fdv-converter
+    git clone https://github.com/Detectronic-DN/FDV_Converter.git
+    cd FDV_Converter
     ```
 
 2. **Set up a virtual environment**:
