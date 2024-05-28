@@ -11,20 +11,19 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 from PySide6.QtCore import Qt, Signal
-from src.backend.backend import Backend
 from src.logger.logger import Logger
 
 
 class LoginPage(QWidget):
     navigate_to_site_details = Signal()
 
-    def __init__(self) -> None:
+    def __init__(self, backend) -> None:
         """
         Initializes the LoginPage with UI components and backend integration.
         """
         super().__init__()
 
-        self.backend = Backend()
+        self.backend = backend
         self.logger = Logger(__name__)
         self.username: str = ""
         self.password: str = ""
@@ -35,6 +34,7 @@ class LoginPage(QWidget):
         """
         Initializes the UI components of the login page.
         """
+        self.setWindowTitle("Login")
         layout = QVBoxLayout()
 
         # Create a spacer item for top and bottom
@@ -47,7 +47,7 @@ class LoginPage(QWidget):
         # Create the frame for the login form without visible borders
         self.login_frame = QFrame()
         self.login_frame.setFrameShape(QFrame.NoFrame)
-        self.login_frame.setFixedSize(400, 200) 
+        self.login_frame.setFixedSize(400, 200)
 
         form_layout = QVBoxLayout(self.login_frame)
 
