@@ -1,6 +1,8 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
 from src.UI.login_page import LoginPage
 from src.UI.site_details_page import SiteDetailsPage
+from src.logger.logger import Logger
+from src.UI.fdv_page import FDVPage
 from src.backend.backend import Backend
 
 
@@ -11,7 +13,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
         self.setWindowTitle("FDV App")
-        self.setGeometry(100, 100, 640, 480)
+        self.setGeometry(100, 100, 800, 600)  # Adjusted window size
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -23,7 +25,7 @@ class MainWindow(QMainWindow):
         self.backend = Backend()
 
         self.login_page = LoginPage(self.backend)
-        self.site_details_page = SiteDetailsPage(self.backend)
+        self.site_details_page = SiteDetailsPage(self.backend, self.stack)
 
         self.stack.addWidget(self.login_page)
         self.stack.addWidget(self.site_details_page)
@@ -32,6 +34,7 @@ class MainWindow(QMainWindow):
 
         self.login_page.navigate_to_site_details.connect(self.show_site_details_page)
         self.site_details_page.back_button_clicked.connect(self.show_login_page)
+        self.site_details_page.continue_to_next.connect(self.show_fdv_page)
 
         self.show()
 
@@ -46,3 +49,17 @@ class MainWindow(QMainWindow):
         Shows the login page.
         """
         self.stack.setCurrentWidget(self.login_page)
+
+    def show_fdv_page(self) -> None:
+        """
+        Shows the FDV page with the necessary parameters.
+        """
+        fdv_page = FDVPage(
+            self.backend,
+            self.site_details_page.filePath,
+            self.site_details_page.siteId,
+            self.site_details_page.startTimestamp,
+            self.site_details_page.endTimestamp,
+        )
+        self.stack.addWidget(fdv_page)
+        self.stack.setCurrentWidget(fdv_page)

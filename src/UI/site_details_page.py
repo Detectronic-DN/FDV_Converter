@@ -19,6 +19,7 @@ from src.UI.fdv_page import FDVPage
 
 class SiteDetailsPage(QWidget):
     back_button_clicked = Signal()
+    continue_to_next = Signal()
 
     def __init__(self, backend, stack: QStackedWidget) -> None:
         """
@@ -116,7 +117,7 @@ class SiteDetailsPage(QWidget):
         edit_timestamp_button = QPushButton("Edit Timestamp")
         edit_timestamp_button.clicked.connect(self.edit_timestamps)
         continue_button = QPushButton("Continue")
-        continue_button.clicked.connect(self.continue_to_next)
+        continue_button.clicked.connect(self.continue_to_next_page)
 
         action_buttons_layout.addWidget(edit_timestamp_button)
         action_buttons_layout.addWidget(continue_button)
@@ -185,19 +186,11 @@ class SiteDetailsPage(QWidget):
         """
         self.backend.edit_timestamps(self.startTimestamp, self.endTimestamp)
 
-    def continue_to_next(self) -> None:
+    def continue_to_next_page(self) -> None:
         """
-        Continues to the next page with the current site details.
+        Emits signal to continue to the next page.
         """
-        fdv_page = FDVPage(
-            self.backend,
-            self.filePath,
-            self.siteId,
-            self.startTimestamp,
-            self.endTimestamp,
-        )
-        self.stack.addWidget(fdv_page)
-        self.stack.setCurrentWidget(fdv_page)
+        self.continue_to_next.emit()
 
     @Slot()
     def on_back_button_clicked(self):
