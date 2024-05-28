@@ -1,5 +1,3 @@
-# src/UI/site_details_page.py
-
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -10,23 +8,26 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QTextEdit,
     QFileDialog,
+    QStackedWidget,
 )
 from PySide6.QtCore import Qt, Signal, Slot, QThread
 from src.logger.logger import Logger
 from src.worker.api_worker import Worker
 from src.worker.file_worker import UploadWorker
+from src.UI.fdv_page import FDVPage
 
 
 class SiteDetailsPage(QWidget):
     back_button_clicked = Signal()
 
-    def __init__(self, backend) -> None:
+    def __init__(self, backend, stack: QStackedWidget) -> None:
         """
         Initializes the SiteDetailsPage with UI components.
         """
         super().__init__()
 
         self.backend = backend
+        self.stack = stack
         self.logger = Logger(__name__, emit_func=self.append_log)
 
         # Worker thread setup for downloading
@@ -85,7 +86,7 @@ class SiteDetailsPage(QWidget):
         file_upload_layout = QHBoxLayout()
         upload_label = QLabel("Upload File:")
         self.upload_input = QLineEdit()
-        self.upload_input.setPlaceholderText("Upload a CSV file")
+        self.upload_input.setPlaceholderText("Upload a CSV or Excel file")
         browse_button = QPushButton("Browse")
         browse_button.clicked.connect(self.open_file_dialog)
         file_upload_layout.addWidget(upload_label)
@@ -130,7 +131,7 @@ class SiteDetailsPage(QWidget):
 
         # Logs Display Section
         logs_layout = QVBoxLayout()
-        logs_label = QLabel("Logs:")
+        logs_label = QLabel("Logs")
         self.logs_display = QTextEdit()
         self.logs_display.setPlaceholderText("No logs available")
         self.logs_display.setReadOnly(True)
@@ -142,13 +143,15 @@ class SiteDetailsPage(QWidget):
 
     def open_file_dialog(self) -> None:
         """
-        Opens a file dialog to select a CSV file.
+        Opens a file dialog to select a CSV or Excel file.
         """
-        file_dialog = QFileDialog(self, "Select a CSV File", "", "CSV Files (*.csv)")
+        file_dialog = QFileDialog(
+            self, "Select a CSV or Excel File", "", "Files (*.csv *.xls *.xlsx)"
+        )
         if file_dialog.exec():
             file_path = file_dialog.selectedFiles()[0]
             self.upload_input.setText(file_path)
-            # Run the CSV upload in a separate thread
+            # Run the CSV or Excel upload in a separate thread
             self.upload_worker.upload_csv_file.emit(file_path)
 
     def open_folder_dialog(self) -> None:
@@ -186,8 +189,15 @@ class SiteDetailsPage(QWidget):
         """
         Continues to the next page with the current site details.
         """
-        # Implement navigation logic here
-        pass
+        fdv_page = FDVPage(
+            self.backend,
+            self.filePath,
+            self.siteId,
+            self.startTimestamp,
+            self.endTimestamp,
+        )
+        self.stack.addWidget(fdv_page)
+        self.stack.setCurrentWidget(fdv_page)
 
     @Slot()
     def on_back_button_clicked(self):
@@ -235,7 +245,6 @@ class SiteDetailsPage(QWidget):
             self.logs_display.append("Processing, please wait...")
         else:
             self.logs_display.append("Processing complete.")
-        # Implement UI changes for busy state if necessary
 
     def append_log(self, log_message: str):
         """
