@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
         self.setWindowTitle("FDV App")
-        self.setGeometry(100, 100, 800, 600)  # Adjusted window size
+        self.setGeometry(100, 100, 480,320)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -63,3 +63,4 @@ class MainWindow(QMainWindow):
         )
         self.stack.addWidget(fdv_page)
         self.stack.setCurrentWidget(fdv_page)
+        fdv_page.back_button_clicked.connect(self.show_site_details_page)

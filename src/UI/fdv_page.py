@@ -1,5 +1,3 @@
-# src/UI/fdv_page.py
-
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -76,15 +74,19 @@ class FDVPage(QWidget):
         self.interim_reports_button = QPushButton("Interim Reports")
         fdv_layout.addWidget(self.interim_reports_button, 5, 0)
 
+
         self.create_fdv_button = QPushButton("Create FDV")
         fdv_layout.addWidget(self.create_fdv_button, 5, 1)
 
+        fdv_layout.addWidget(QLabel("FDV Logs:"), 6, 0)
         self.fdv_logs_display = QTextEdit()
         self.fdv_logs_display.setReadOnly(True)
+        self.fdv_logs_display.setPlaceholderText("No FDV file created yet")
+
         fdv_scroll_area = QScrollArea()
         fdv_scroll_area.setWidgetResizable(True)
         fdv_scroll_area.setWidget(self.fdv_logs_display)
-        fdv_layout.addWidget(fdv_scroll_area, 6, 0, 1, 2)
+        fdv_layout.addWidget(fdv_scroll_area, 7, 0, 1, 2)
 
         fdv_tab.setLayout(fdv_layout)
         self.tab_widget.addTab(fdv_tab, "FDV Converter")
@@ -105,12 +107,15 @@ class FDVPage(QWidget):
         self.create_rainfall_button = QPushButton("Create Rainfall")
         rainfall_layout.addWidget(self.create_rainfall_button, 2, 1)
 
+        rainfall_layout.addWidget(QLabel("Rainfall Logs:"), 3, 0)
+
         self.rainfall_logs_display = QTextEdit()
         self.rainfall_logs_display.setReadOnly(True)
+        self.rainfall_logs_display.setPlaceholderText("No Rainfall file created yet")
         rainfall_scroll_area = QScrollArea()
         rainfall_scroll_area.setWidgetResizable(True)
         rainfall_scroll_area.setWidget(self.rainfall_logs_display)
-        rainfall_layout.addWidget(rainfall_scroll_area, 3, 0, 1, 2)
+        rainfall_layout.addWidget(rainfall_scroll_area, 4, 0, 1, 2)
 
         rainfall_tab.setLayout(rainfall_layout)
         self.tab_widget.addTab(rainfall_tab, "Rainfall")
@@ -275,7 +280,4 @@ class FDVPage(QWidget):
         self.tab_widget.setCurrentIndex(0)
 
     def on_back_button_clicked(self):
-        # Emit a signal to go back to the previous page
-        self.parent().setCurrentIndex(
-            self.parent().indexOf(self.parent().findChild(QWidget, "siteDetailsPage"))
-        )
+            self.back_button_clicked.emit()
