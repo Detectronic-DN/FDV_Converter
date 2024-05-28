@@ -1,3 +1,5 @@
+# src/UI/site_details_page.py
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -8,7 +10,6 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QTextEdit,
     QFileDialog,
-    QProgressBar,
 )
 from PySide6.QtCore import Qt, Signal, Slot
 from src.logger.logger import Logger
@@ -24,7 +25,7 @@ class SiteDetailsPage(QWidget):
         super().__init__()
 
         self.backend = backend
-        self.logger = Logger(__name__)
+        self.logger = Logger(__name__, emit_func=self.append_log)
         self.backend.siteDetailsRetrieved.connect(self.on_site_details_retrieved)
         self.backend.errorOccurred.connect(self.on_error_occurred)
         self.backend.logMessage.connect(self.on_log_message)
@@ -116,7 +117,6 @@ class SiteDetailsPage(QWidget):
         logs_layout.addWidget(logs_label)
         logs_layout.addWidget(self.logs_display)
         layout.addLayout(logs_layout)
-    
 
         self.setLayout(layout)
 
@@ -150,17 +150,15 @@ class SiteDetailsPage(QWidget):
             if self.folderpath:
                 self.backend.download_csv_file(site_id, self.folderpath)
             else:
-                self.logs_display.append("Folder selection cancelled.")
+                self.logger.warning("Folder selection cancelled.")
         else:
-            self.logs_display.append("Please enter a Site ID.")
+            self.logger.warning("Please enter a Site ID.")
 
     def edit_timestamps(self) -> None:
         """
         Edits the timestamps using the backend.
         """
-        self.backend.edit_timestamps(
-            self.startTimestamp, self.endTimestamp
-        )
+        self.backend.edit_timestamps(self.startTimestamp, self.endTimestamp)
 
     def continue_to_next(self) -> None:
         """
@@ -210,3 +208,9 @@ class SiteDetailsPage(QWidget):
         else:
             self.logs_display.append("Processing complete.")
         # Implement UI changes for busy state if necessary
+
+    def append_log(self, log_message: str):
+        """
+        Appends a log message to the logs display.
+        """
+        self.logs_display.append(log_message)
