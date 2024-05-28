@@ -5,7 +5,6 @@ sys.path.append(os.getcwd())
 from PySide6.QtWidgets import QApplication
 
 from src.logger.logger import logger
-from src.backend.backend import Backend
 from src.UI.main_window import MainWindow
 
 
@@ -13,13 +12,11 @@ def main():
     try:
         app = QApplication(sys.argv)
 
-        backend = Backend()
-
         # Create the main window and pass the backend to it
         main_window = MainWindow()
 
         # Connect the aboutToQuit signal to the backend cleanup method
-        app.aboutToQuit.connect(main_window.closeEvent)
+        app.aboutToQuit.connect(main_window.cleanup)
 
         main_window.show()
 

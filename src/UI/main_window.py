@@ -69,9 +69,12 @@ class MainWindow(QMainWindow):
         """
         Handles the close event to ensure all threads are properly closed.
         """
-        self.backend.clear_login_details()  # Ensure login details are cleared
-
-        # Close any additional threads created in the application
-        self.site_details_page.close_threads()
-
+        self.cleanup()
         event.accept()
+
+    def cleanup(self):
+        """
+        Cleans up any resources and threads.
+        """
+        self.backend.clear_login_details()  # Ensure login details are cleared
+        self.site_details_page.close_threads()
