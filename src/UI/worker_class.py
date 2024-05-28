@@ -24,7 +24,6 @@ class Worker(QObject):
             self.backend.download_csv_file(site_id, folderpath)
         finally:
             self.busyChanged.emit(False)
-            self._disconnect_signals()
 
     def _connect_signals(self):
         if not self._connections_made:
@@ -32,21 +31,3 @@ class Worker(QObject):
             self.backend.siteDetailsRetrieved.connect(self.siteDetailsRetrieved.emit)
             self.backend.errorOccurred.connect(self.errorOccurred.emit)
             self._connections_made = True
-
-    def _disconnect_signals(self):
-        if self._connections_made:
-            try:
-                self.backend.logMessage.disconnect(self.logMessage.emit)
-            except RuntimeError:
-                pass
-            try:
-                self.backend.siteDetailsRetrieved.disconnect(
-                    self.siteDetailsRetrieved.emit
-                )
-            except RuntimeError:
-                pass
-            try:
-                self.backend.errorOccurred.disconnect(self.errorOccurred.emit)
-            except RuntimeError:
-                pass
-            self._connections_made = False

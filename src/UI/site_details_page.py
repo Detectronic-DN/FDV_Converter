@@ -110,7 +110,7 @@ class SiteDetailsPage(QWidget):
         # Back Button
         back_button_layout = QHBoxLayout()
         self.back_button = QPushButton("Back")
-        self.back_button.clicked.connect(self.back_button_clicked.emit)
+        self.back_button.clicked.connect(self.on_back_button_clicked)
         back_button_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
         layout.addLayout(back_button_layout)
 
@@ -174,6 +174,12 @@ class SiteDetailsPage(QWidget):
         # Implement navigation logic here
         pass
 
+    @Slot()
+    def on_back_button_clicked(self):
+        """Handles the back button click event."""
+        self.back_button_clicked.emit()
+        self.close_thread()
+
     @Slot(str, str, str, str)
     def on_site_details_retrieved(
         self, site_id, site_name, start_timestamp, end_timestamp
@@ -220,3 +226,9 @@ class SiteDetailsPage(QWidget):
         Appends a log message to the logs display.
         """
         self.logs_display.append(log_message)
+
+    def close_thread(self):
+        """Closes the worker thread gracefully."""
+        self.worker_thread.quit()
+        self.worker_thread.wait()
+        
