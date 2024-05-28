@@ -12,11 +12,6 @@ class UploadWorker(QObject):
         super().__init__()
         self.backend = backend
         self._connections_made = False
-        self.logMessage.connect(self.backend.logMessage)
-        self.siteDetailsRetrieved.connect(self.backend.siteDetailsRetrieved)
-        self.errorOccurred.connect(self.backend.errorOccurred)
-
-        # Connect the upload_csv_file signal to the appropriate method
         self.upload_csv_file.connect(self.perform_upload_csv_file)
 
     @Slot(str)
@@ -27,6 +22,13 @@ class UploadWorker(QObject):
             self.backend.upload_csv_file(filepath)
         finally:
             self.busyChanged.emit(False)
+
+    def _connect_signals(self):
+        if not self._connections_made:
+            self.backend.logMessage.connect(self.logMessage.emit)
+            self.backend.siteDetailsRetrieved.connect(self.siteDetailsRetrieved.emit)
+            self.backend.errorOccurred.connect(self.errorOccurred.emit)
+            self._connections_made = True
 
     def _connect_signals(self):
         if not self._connections_made:
