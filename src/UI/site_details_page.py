@@ -1,5 +1,3 @@
-# src/UI/site_details_page.py
-
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -13,7 +11,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, Slot, QThread
 from src.logger.logger import Logger
-from src.UI.worker_class import Worker
+from worker_class import Worker
 
 
 class SiteDetailsPage(QWidget):

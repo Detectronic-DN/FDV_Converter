@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from PySide6.QtCore import QObject, Slot, Signal, QSettings, Property
+from PySide6.QtCore import QObject, Signal, Slot, QSettings, Property
 from PySide6.QtWidgets import QDialog
 from src.backend.timestamp import TimestampDialog
 from src.dd.get_csv_file import download_csv_file
@@ -31,7 +31,6 @@ class Backend(QObject):
     interimReportCreated = Signal(str)
     rainfallCreated = Signal(str)
     rainfallError = Signal(str)
-    busyChanged = Signal(bool)  # Signal for busy state
 
     def __init__(self):
         """
