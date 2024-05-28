@@ -1,12 +1,69 @@
-# virtual enviroment
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+main.dist
+main.build
+
+# Jupyter Notebook
+*.ipynb
+
+# PyInstaller
+# Usually these are the output directories
+# Uncomment this if you have these directories
+# main.dist/
+# main.build/
+
+# virtual environments
 .fdvtrail
 
+# Spyder project settings
+.spyderproject
+.spyproject
 
-cache files
-__pycache__/
-*.pyc
+# Rope project settings
+.ropeproject
 
-# files
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+
+# Data files
 *.csv
-*.xlsx
 *.fdv
+*.xlsx
+*.r
+*.dat
+
+
+# Editor directories and files
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs and databases
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
