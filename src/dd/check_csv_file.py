@@ -20,7 +20,6 @@ def calculate_interval(timestamps: pd.Series) -> Optional[pd.Timedelta]:
 def fill_gaps(df: pd.DataFrame, interval: pd.Timedelta) -> pd.DataFrame:
     """Fill gaps in the dataframe based on the most common interval."""
     try:
-        logger.info("Filling gaps in the dataframe based on the calculated interval.")
         timestamp_column = df.columns[0]
         full_range = pd.date_range(
             start=df[timestamp_column].min(),
@@ -30,12 +29,17 @@ def fill_gaps(df: pd.DataFrame, interval: pd.Timedelta) -> pd.DataFrame:
         logger.info(
             f"Full date range generated from {df[timestamp_column].min()} to {df[timestamp_column].max()}."
         )
+        original_len = len(df)
         df.set_index(timestamp_column, inplace=True)
         df = df.reindex(full_range)
         df.index.name = timestamp_column
         df.reset_index(inplace=True)
+        filled_len = len(df)
+        gap_count = filled_len - original_len
+
+        logger.info(f"{gap_count} gaps filled in the dataframe.")
         logger.info("Gaps filled in the dataframe.")
-        return df
+        return df, gap_count
     except Exception as e:
         logger.error(f"Error filling gaps: {e}")
         return df
@@ -60,9 +64,7 @@ def try_parsing_date(text: str) -> Optional[pd.Timestamp]:
 def parse_dates(date_series: pd.Series) -> pd.Series:
     """Parse dates with mixed formats."""
     try:
-        logger.info("Parsing dates with mixed formats.")
         parsed_dates = date_series.apply(try_parsing_date)
-        logger.info("Dates parsed successfully.")
         return parsed_dates
     except Exception as e:
         logger.error(f"Error parsing dates: {e}")
@@ -101,12 +103,11 @@ def check_and_fill_csv_file(filepath: str) -> Optional[Tuple[pd.DataFrame, int]]
         # Calculate interval and fill gaps
         interval = calculate_interval(df[df.columns[0]])
         if interval is not None:
-            df = fill_gaps(df, interval)
-            gaps_count = df.isnull().sum().sum()  # Count total gaps
+            df, gaps_count = fill_gaps(df, interval)
             logger.info(f"There are {gaps_count} gaps in the data.")
             df.to_csv(filepath, index=False)
             logger.info(f"CSV file updated and saved to {filepath}")
-            return df, gaps_count
+            return df, gaps_count, filepath, interval
         else:
             logger.error("Failed to calculate the interval, cannot fill gaps.")
             return None
