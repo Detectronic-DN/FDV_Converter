@@ -11,8 +11,9 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QFileDialog,
 )
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import Qt, Signal, Slot, QThread
 from src.logger.logger import Logger
+from src.UI.worker_class import Worker
 
 
 class SiteDetailsPage(QWidget):
@@ -26,10 +27,17 @@ class SiteDetailsPage(QWidget):
 
         self.backend = backend
         self.logger = Logger(__name__, emit_func=self.append_log)
-        self.backend.siteDetailsRetrieved.connect(self.on_site_details_retrieved)
-        self.backend.errorOccurred.connect(self.on_error_occurred)
-        self.backend.logMessage.connect(self.on_log_message)
-        self.backend.busyChanged.connect(self.on_busy_changed)
+
+        # Worker thread setup
+        self.worker = Worker(backend)
+        self.worker_thread = QThread()
+        self.worker.moveToThread(self.worker_thread)
+        self.worker_thread.start()
+
+        self.worker.logMessage.connect(self.on_log_message)
+        self.worker.siteDetailsRetrieved.connect(self.on_site_details_retrieved)
+        self.worker.errorOccurred.connect(self.on_error_occurred)
+        self.worker.busyChanged.connect(self.on_busy_changed)
 
         self.siteId = ""
         self.siteName = ""
@@ -148,7 +156,8 @@ class SiteDetailsPage(QWidget):
         if site_id:
             self.open_folder_dialog()
             if self.folderpath:
-                self.backend.download_csv_file(site_id, self.folderpath)
+                # Run the CSV download in a separate thread
+                self.worker.download_csv_file.emit(site_id, self.folderpath)
             else:
                 self.logger.warning("Folder selection cancelled.")
         else:

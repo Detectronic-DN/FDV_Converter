@@ -76,3 +76,5 @@ class Logger:
     def debug(self, message: str):
         """Logs a debug message."""
         self.logger.debug(message)
+
+logger = Logger(__name__)
