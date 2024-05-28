@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
         self.setWindowTitle("FDV App")
-        self.setGeometry(100, 100, 480,320)
+        self.setGeometry(100, 100, 800, 600)  # Adjusted window size
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -64,3 +64,14 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(fdv_page)
         self.stack.setCurrentWidget(fdv_page)
         fdv_page.back_button_clicked.connect(self.show_site_details_page)
+
+    def closeEvent(self, event):
+        """
+        Handles the close event to ensure all threads are properly closed.
+        """
+        self.backend.clear_login_details()  # Ensure login details are cleared
+
+        # Close any additional threads created in the application
+        self.site_details_page.close_threads()
+
+        event.accept()

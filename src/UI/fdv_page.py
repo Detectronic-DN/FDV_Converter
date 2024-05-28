@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QTextEdit,
     QTabWidget,
-    QHBoxLayout,
 )
 from PySide6.QtCore import Qt, Signal
 
