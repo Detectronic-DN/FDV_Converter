@@ -146,9 +146,6 @@ class LoginPage(QWidget):
                 self.logger.error(f"Validation error: {validation_error}")
             else:
                 self.backend.save_login_details(self.username, self.password)
-                self.logger.info(
-                    f"Username: {self.username}, Password: {self.password}"
-                )
                 self.navigate_to_site_details.emit()
         except Exception as e:
             self.logger.error(f"Error in next action: {e}")
