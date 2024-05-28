@@ -1,18 +1,13 @@
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QFrame,
-    QSpacerItem,
-    QSizePolicy,
-)
-from PySide6.QtCore import Qt
-
-from src.UI.login_page import LoginWidget
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
+from .login_page import LoginPage
+from .site_details_page import SiteDetailsPage
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initializes the MainWindow with UI components and navigation.
+        """
         super().__init__()
         self.setWindowTitle("FDV App")
         self.setGeometry(100, 100, 640, 480)
@@ -22,24 +17,29 @@ class MainWindow(QMainWindow):
 
         central_layout = QVBoxLayout(central_widget)
 
-        # Create a spacer item for top and bottom
-        top_spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        # Create a stacked widget for navigation
+        self.stack = QStackedWidget()
+        self.login_page = LoginPage()
+        self.site_details_page = SiteDetailsPage()
 
-        # Add top spacer to the layout
-        central_layout.addItem(top_spacer)
+        self.stack.addWidget(self.login_page)
+        self.stack.addWidget(self.site_details_page)
 
-        # Create the frame for the login form without visible borders
-        self.login_frame = QFrame()
-        self.login_frame.setFrameShape(QFrame.NoFrame)
-        self.login_frame.setFixedSize(300, 200)
+        central_layout.addWidget(self.stack)
 
-        login_layout = QVBoxLayout(self.login_frame)
-        login_layout.addWidget(LoginWidget())
-
-        central_layout.addWidget(self.login_frame, 0, Qt.AlignCenter)
-
-        # Add bottom spacer to the layout
-        central_layout.addItem(bottom_spacer)
+        self.login_page.navigate_to_site_details.connect(self.show_site_details_page)
+        self.site_details_page.back_button.clicked.connect(self.show_login_page)
 
         self.show()
+
+    def show_site_details_page(self) -> None:
+        """
+        Shows the site details page.
+        """
+        self.stack.setCurrentWidget(self.site_details_page)
+
+    def show_login_page(self) -> None:
+        """
+        Shows the login page.
+        """
+        self.stack.setCurrentWidget(self.login_page)
