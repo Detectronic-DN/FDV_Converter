@@ -10,12 +10,13 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QTabWidget,
     QHBoxLayout,
-    QGroupBox,
 )
 from PySide6.QtCore import Qt, Signal
 
 
 class FDVPage(QWidget):
+    back_button_clicked = Signal()
+
     def __init__(self, backend, filepath, site_id, start_timestamp, end_timestamp):
         super().__init__()
         self.backend = backend
@@ -73,7 +74,6 @@ class FDVPage(QWidget):
 
         self.interim_reports_button = QPushButton("Interim Reports")
         fdv_layout.addWidget(self.interim_reports_button, 5, 0)
-
 
         self.create_fdv_button = QPushButton("Create FDV")
         fdv_layout.addWidget(self.create_fdv_button, 5, 1)
@@ -280,4 +280,4 @@ class FDVPage(QWidget):
         self.tab_widget.setCurrentIndex(0)
 
     def on_back_button_clicked(self):
-            self.back_button_clicked.emit()
+        self.back_button_clicked.emit()
