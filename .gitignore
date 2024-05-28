@@ -9,5 +9,4 @@ __pycache__/
 # files
 *.csv
 *.xlsx
-FDV/
 *.fdv

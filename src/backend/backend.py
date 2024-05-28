@@ -2,10 +2,18 @@ import os
 import pandas as pd
 from PySide6.QtCore import QObject, Slot, Signal, QSettings, Property
 from PySide6.QtWidgets import QDialog
-from src.backend.timestamp import TimestampDialog  
+from src.backend.timestamp import TimestampDialog
 from src.dd.get_csv_file import download_csv_file
 from src.dd.check_csv_file import check_and_fill_csv_file
 from src.logger.logger import Logger
+from src.FDV.FDV_converter import FDV_conversion
+from src.Interiem_reports.interim_reports import (
+    create_interim_report,
+    calculate_daily_summary,
+    save_interim_files,
+)
+from src.FDV.FDV_rainfall_converter import perform_R_conversion
+from src.calculator.r3calculator import R3Calculator
 
 
 class Backend(QObject):
@@ -17,6 +25,12 @@ class Backend(QObject):
     csvFileUploaded = Signal(str, str, str, str)
     finalFilePathChanged = Signal(str)
     columnsRetrieved = Signal(list)
+    busyChanged = Signal(bool)
+    fdvCreated = Signal(str)
+    fdvError = Signal(str)
+    interimReportCreated = Signal(str)
+    rainfallCreated = Signal(str)
+    rainfallError = Signal(str)
     busyChanged = Signal(bool)  # Signal for busy state
 
     def __init__(self):
@@ -259,3 +273,185 @@ class Backend(QObject):
             error_message = f"Exception occurred while modifying CSV file: {e}"
             self.log_error(error_message)
             self.errorOccurred.emit(error_message)
+
+    @Slot(str, str, str, str, str)
+    def create_fdv(
+        self, site_name, pipe_type, pipe_size_param, depth_col, velocity_col
+    ):
+        """Create an FDV file."""
+        self.busy = True  # Set busy before starting the operation
+        try:
+            csv_file_name = self.final_file_path
+            df = pd.read_csv(csv_file_name)
+            columns = df.columns
+            df[columns[0]] = pd.to_datetime(df[columns[0]])
+            df.sort_values(by=columns[0], inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            start_date = df[columns[0]].min()
+            end_date = df[columns[0]].max()
+            interval = self.interval
+
+            # Handle "None" option for columns
+            if depth_col == "None":
+                depth_col = None
+            if velocity_col == "None":
+                velocity_col = None
+
+            # Create output directory and file path
+            output_dir = os.path.join(os.path.dirname(csv_file_name), "FDV")
+            os.makedirs(output_dir, exist_ok=True)
+            output_file_name = os.path.join(output_dir, f"{site_name}.fdv")
+
+            null_readings = FDV_conversion(
+                csv_file_name,
+                output_file_name,
+                site_name,
+                start_date,
+                end_date,
+                interval,
+                pipe_type,
+                pipe_size_param,
+                depth_col,
+                velocity_col,
+            )
+            self.fdvCreated.emit(
+                f"FDV conversion completed. Null readings: {null_readings}"
+            )
+            self.log_info(f"FDV file created: {output_file_name}")
+        except Exception as e:
+            self.fdvError.emit(str(e))
+            self.log_error(f"Error creating FDV file: {e}")
+        finally:
+            self.busy = False  # Reset busy after the operation
+
+    @Slot()
+    def create_interim_reports(self):
+        """Create interim reports."""
+        self.busy = True  # Set busy before starting the operation
+        try:
+            csv_file_name = self.final_file_path
+            if not csv_file_name:
+                error_message = "No CSV file selected."
+                self.log_error(error_message)
+                self.errorOccurred.emit(error_message)
+                return
+
+            self.log_info(f"Loading file from {csv_file_name}")
+            df = pd.read_csv(csv_file_name)
+            columns = df.columns
+            time_column = columns[0]
+            flow_column = columns[1]
+            df[time_column] = pd.to_datetime(df[time_column])
+            df.sort_values(by=time_column, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+
+            interval = self.interval
+            interval = int(interval.total_seconds())
+
+            report_df, values_df = create_interim_report(
+                df, flow_column, time_column, interval
+            )
+            daily_summary = calculate_daily_summary(df, time_column, flow_column)
+
+            output_dir = os.path.join(os.path.dirname(csv_file_name), "interim_reports")
+            os.makedirs(output_dir, exist_ok=True)
+
+            self.interimReportCreated.emit(f"Saving interim report to {output_dir}")
+
+            # Save interim report and daily summary to Excel
+            excel_file_path = os.path.join(
+                output_dir,
+                f"{os.path.basename(csv_file_name).split('.')[0]}_interim_report.xlsx",
+            )
+            with pd.ExcelWriter(excel_file_path) as writer:
+                values_df.to_excel(writer, sheet_name="Values", index=False)
+                report_df.to_excel(writer, sheet_name="Summaries", index=False)
+                daily_summary.to_excel(writer, sheet_name="Daily", index=False)
+
+            save_interim_files(report_df, daily_summary, output_dir)
+            self.interimReportCreated.emit(
+                f"Interim report created successfully at {output_dir}"
+            )
+        except Exception as e:
+            error_message = f"Exception occurred while creating interim report: {e}"
+            self.log_error(error_message)
+            self.errorOccurred.emit(error_message)
+        finally:
+            self.busy = False  # Reset busy after the operation
+
+    @Property(str, notify=finalFilePathChanged)
+    def final_file_path(self):
+        return self._final_file_path
+
+    @final_file_path.setter
+    def final_file_path(self, value):
+        if self._final_file_path != value:
+            self._final_file_path = value
+            self.finalFilePathChanged.emit(value)
+
+    @Slot(str, str)
+    def create_rainfall(self, site_name: str, rainfall_col: str):
+        """Create a rainfall file."""
+        self.busy = True  # Set busy before starting the operation
+        try:
+            csv_file_name = self.final_file_path
+            df = pd.read_csv(csv_file_name)
+            columns = df.columns
+            df[columns[0]] = pd.to_datetime(df[columns[0]])
+            df.sort_values(by=columns[0], inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            start_date = df[columns[0]].min()
+            end_date = df[columns[0]].max()
+            interval = self.interval
+
+            # Handle "None" option for rainfall column
+            if rainfall_col == "None":
+                error_message = "Rainfall column cannot be 'None'."
+                self.log_error(error_message)
+                self.rainfallError.emit(error_message)
+                return
+
+            output_dir = os.path.join(os.path.dirname(csv_file_name), "rainfall")
+            os.makedirs(output_dir, exist_ok=True)
+            output_file_name = os.path.join(output_dir, f"{site_name}.r")
+
+            try:
+                null_readings = perform_R_conversion(
+                    csv_file_name,
+                    output_file_name,
+                    site_name,
+                    start_date,
+                    end_date,
+                    interval,
+                    rainfall_col,
+                )
+                self.rainfallCreated.emit(
+                    f"Rainfall conversion completed. Null readings: {null_readings}"
+                )
+                self.log_info(f"Rainfall file created successfully: {output_file_name}")
+            except Exception as e:
+                self.rainfallError.emit(str(e))
+                self.log_error(f"Error creating rainfall file: {e}")
+        except Exception as e:
+            error_message = f"Exception occurred while creating rainfall file: {e}"
+            self.log_error(error_message)
+            self.rainfallError.emit(error_message)
+        finally:
+            self.busy = False  # Reset busy after the operation
+
+    @Slot(float, float, str, result=float)
+    def calculate_r3(self, width: float, height: float, egg_form: str) -> float:
+        """Calculate the R3 value based on given dimensions and egg form."""
+        try:
+            if egg_form == "Egg Type 1":
+                egg_form_value = 1
+            elif egg_form == "Egg Type 2":
+                egg_form_value = 2
+            else:
+                raise ValueError(f"Unknown egg form: {egg_form}")
+
+            r3_value = R3Calculator(width, height, egg_form_value)
+            return r3_value
+        except Exception as e:
+            self.log_error(f"Error calculating R3 value: {str(e)}")
+            return -1.0
