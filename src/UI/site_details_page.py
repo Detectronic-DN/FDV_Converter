@@ -216,7 +216,6 @@ class SiteDetailsPage(QWidget):
             self.logs_display.append("Processing, please wait...")
         else:
             self.logs_display.append("Processing complete.")
-        # Implement UI changes for busy state if necessary
 
     def append_log(self, log_message: str):
         """
