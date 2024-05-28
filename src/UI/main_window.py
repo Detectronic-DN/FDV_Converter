@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
-from .login_page import LoginPage
-from .site_details_page import SiteDetailsPage
+from src.UI.login_page import LoginPage
+from src.UI.site_details_page import SiteDetailsPage
+from src.backend.backend import Backend
 
 
 class MainWindow(QMainWindow):
@@ -19,8 +20,10 @@ class MainWindow(QMainWindow):
 
         # Create a stacked widget for navigation
         self.stack = QStackedWidget()
-        self.login_page = LoginPage()
-        self.site_details_page = SiteDetailsPage()
+        self.backend = Backend()
+
+        self.login_page = LoginPage(self.backend)
+        self.site_details_page = SiteDetailsPage(self.backend)
 
         self.stack.addWidget(self.login_page)
         self.stack.addWidget(self.site_details_page)
@@ -28,7 +31,7 @@ class MainWindow(QMainWindow):
         central_layout.addWidget(self.stack)
 
         self.login_page.navigate_to_site_details.connect(self.show_site_details_page)
-        self.site_details_page.back_button.clicked.connect(self.show_login_page)
+        self.site_details_page.back_button_clicked.connect(self.show_login_page)
 
         self.show()
 
