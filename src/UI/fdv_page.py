@@ -287,3 +287,5 @@ class FDVPage(QWidget):
 
     def on_back_button_clicked(self):
         self.back_button_clicked.emit()
+        self.fdv_logs_display.clear()
+        self.rainfall_logs_display.clear()

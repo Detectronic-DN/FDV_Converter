@@ -201,6 +201,7 @@ class SiteDetailsPage(QWidget):
         """Handles the back button click event."""
         self.back_button_clicked.emit()
         self.close_threads()
+        self.logs_display.clear()
 
     @Slot(str, str, str, str)
     def on_site_details_retrieved(
@@ -256,3 +257,9 @@ class SiteDetailsPage(QWidget):
 
         self.upload_worker_thread.quit()
         self.upload_worker_thread.wait()
+
+    def clear_logs(self) -> None:
+        """
+        Clears the logs display widget.
+        """
+        self.logs_display.clear()
