@@ -326,8 +326,9 @@ class Backend(QObject):
     @Slot()
     def create_interim_reports(self):
         """Create interim reports."""
-        self.busy = True  # Set busy before starting the operation
+        self.busy = True  
         try:
+            self.log_info("Creating interim reports")
             csv_file_name = self.final_file_path
             if not csv_file_name:
                 error_message = "No CSV file selected."

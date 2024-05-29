@@ -255,10 +255,17 @@ class FDVPage(QWidget):
             if self.selected_velocity_column == "None"
             else self.selected_velocity_column
         )
+
+        if self.pipe_size_field.text() is None or self.pipe_size_field.text() == "":
+            pipe_size_param = 0
+
+        else:
+            pipe_size_param = self.pipe_size_field.text()
+
         self.backend.create_fdv(
             self.site_name_field.text(),
             self.pipe_shape_combo_box.currentText(),
-            self.pipe_size_field.text(),
+            pipe_size_param,
             depth_column,
             velocity_column,
         )
