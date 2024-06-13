@@ -20,11 +20,12 @@ main.build
 # PyInstaller
 # Usually these are the output directories
 # Uncomment this if you have these directories
-# main.dist/
-# main.build/
+ main.dist/
+ main.build/
 
 # virtual environments
 .fdvtrail
+.fdv
 
 # Spyder project settings
 .spyderproject
@@ -54,6 +55,7 @@ main.build
 *.njsproj
 *.sln
 *.sw?
+.idea/
 
 # Logs and databases
 logs/
