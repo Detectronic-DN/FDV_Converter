@@ -14,6 +14,27 @@ from PySide6.QtCore import Qt, Signal
 from src.logger.logger import Logger
 
 
+def validate_credentials(username: str, password: str) -> str:
+    """
+    Validates the entered username and password.
+
+    Args:
+        username (str): The entered username.
+        password (str): The entered password.
+
+    Returns:
+        str: An error message if validation fails, otherwise an empty string.
+    """
+    if not username.strip() and not password.strip():
+        return "Username and Password cannot be empty."
+    elif not username.strip():
+        return "Username cannot be empty."
+    elif not password.strip():
+        return "Password cannot be empty."
+    else:
+        return ""
+
+
 class LoginPage(QWidget):
     navigate_to_site_details = Signal()
 
@@ -23,6 +44,11 @@ class LoginPage(QWidget):
         """
         super().__init__()
 
+        self.error_label = None
+        self.show_password_checkbox = None
+        self.password_input = None
+        self.username_input = None
+        self.login_frame = None
         self.backend = backend
         self.logger = Logger(__name__)
         self.username: str = ""
@@ -38,15 +64,15 @@ class LoginPage(QWidget):
         layout = QVBoxLayout()
 
         # Create a spacer item for top and bottom
-        top_spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        top_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
         # Add top spacer to the layout
         layout.addItem(top_spacer)
 
         # Create the frame for the login form without visible borders
         self.login_frame = QFrame()
-        self.login_frame.setFrameShape(QFrame.NoFrame)
+        self.login_frame.setFrameShape(QFrame.Shape.NoFrame)
         self.login_frame.setFixedSize(400, 200)
 
         form_layout = QVBoxLayout(self.login_frame)
@@ -63,7 +89,7 @@ class LoginPage(QWidget):
         password_label = QLabel("Enter Password:")
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Password")
-        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.textChanged.connect(self.clear_error)
         form_layout.addWidget(password_label)
         form_layout.addWidget(self.password_input)
@@ -94,7 +120,7 @@ class LoginPage(QWidget):
         form_layout.addLayout(buttons_layout)
 
         # Add the form layout to the login frame
-        layout.addWidget(self.login_frame, 0, Qt.AlignCenter)
+        layout.addWidget(self.login_frame, 0, Qt.AlignmentFlag.AlignCenter)
 
         # Add bottom spacer to the layout
         layout.addItem(bottom_spacer)
@@ -111,9 +137,9 @@ class LoginPage(QWidget):
         """
         try:
             if self.show_password_checkbox.isChecked():
-                self.password_input.setEchoMode(QLineEdit.Normal)
+                self.password_input.setEchoMode(QLineEdit.EchoMode.Normal)
             else:
-                self.password_input.setEchoMode(QLineEdit.Password)
+                self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         except Exception as e:
             self.logger.error(f"Error toggling password visibility: {e}")
 
@@ -138,7 +164,7 @@ class LoginPage(QWidget):
         try:
             self.username = self.username_input.text()
             self.password = self.password_input.text()
-            validation_error = self.validate_credentials(self.username, self.password)
+            validation_error = validate_credentials(self.username, self.password)
 
             if validation_error:
                 self.error_label.setText(validation_error)
@@ -151,23 +177,3 @@ class LoginPage(QWidget):
             self.logger.error(f"Error in next action: {e}")
             self.error_label.setText("An error occurred. Please try again.")
             self.error_label.setVisible(True)
-
-    def validate_credentials(self, username: str, password: str) -> str:
-        """
-        Validates the entered username and password.
-
-        Args:
-            username (str): The entered username.
-            password (str): The entered password.
-
-        Returns:
-            str: An error message if validation fails, otherwise an empty string.
-        """
-        if not username.strip() and not password.strip():
-            return "Username and Password cannot be empty."
-        elif not username.strip():
-            return "Username cannot be empty."
-        elif not password.strip():
-            return "Password cannot be empty."
-        else:
-            return ""
