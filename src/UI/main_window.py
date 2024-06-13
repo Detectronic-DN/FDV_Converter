@@ -74,7 +74,7 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentWidget(fdv_page)
         fdv_page.back_button_clicked.connect(self.show_site_details_page)
 
-    def closeEvent(self, event) -> None:
+    def close_event(self, event) -> None:
         """
         Handles the close event to ensure all threads are properly closed.
         """
