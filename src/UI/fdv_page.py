@@ -1,16 +1,6 @@
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QComboBox,
-    QGridLayout,
-    QScrollArea,
-    QTextEdit,
-    QTabWidget,
-)
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QGridLayout,
+                               QScrollArea, QTextEdit, QTabWidget, )
 
 
 class FDVPage(QWidget):
@@ -18,6 +8,26 @@ class FDVPage(QWidget):
 
     def __init__(self, backend, filepath, site_id, start_timestamp, end_timestamp):
         super().__init__()
+        self.back_button = None
+        self.use_r3_button = None
+        self.calculate_r3_button = None
+        self.r3_value_field = None
+        self.create_rainfall_button = None
+        self.pipe_width_field = None
+        self.pipe_height_field = None
+        self.egg_type_combo_box = None
+        self.rainfall_logs_display = None
+        self.rainfall_column_combo_box = None
+        self.rainfall_site_name_field = None
+        self.fdv_logs_display = None
+        self.create_fdv_button = None
+        self.interim_reports_button = None
+        self.pipe_size_field = None
+        self.pipe_shape_combo_box = None
+        self.velocity_column_combo_box = None
+        self.depth_column_combo_box = None
+        self.site_name_field = None
+        self.tab_widget = None
         self.backend = backend
         self.filepath = filepath
         self.site_id = site_id
@@ -56,15 +66,7 @@ class FDVPage(QWidget):
         fdv_layout.addWidget(QLabel("Pipe Shape:"), 3, 0)
         self.pipe_shape_combo_box = QComboBox()
         self.pipe_shape_combo_box.addItems(
-            [
-                "Circular",
-                "Rectangular",
-                "Egg Type 1",
-                "Egg Type 2",
-                "Egg Type 2a",
-                "Two Circles and a Rectangle",
-            ]
-        )
+            ["Circular", "Rectangular", "Egg Type 1", "Egg Type 2", "Egg Type 2a", "Two Circles and a Rectangle", ])
         fdv_layout.addWidget(self.pipe_shape_combo_box, 3, 1)
 
         fdv_layout.addWidget(QLabel("Pipe Size:"), 4, 0)
@@ -167,15 +169,9 @@ class FDVPage(QWidget):
         self.backend.errorOccurred.connect(self.on_error_occurred)
 
         # Connect UI element signals to the appropriate slots
-        self.depth_column_combo_box.currentIndexChanged.connect(
-            self.on_depth_column_selected
-        )
-        self.velocity_column_combo_box.currentIndexChanged.connect(
-            self.on_velocity_column_selected
-        )
-        self.rainfall_column_combo_box.currentIndexChanged.connect(
-            self.on_rainfall_column_selected
-        )
+        self.depth_column_combo_box.currentIndexChanged.connect(self.on_depth_column_selected)
+        self.velocity_column_combo_box.currentIndexChanged.connect(self.on_velocity_column_selected)
+        self.rainfall_column_combo_box.currentIndexChanged.connect(self.on_rainfall_column_selected)
 
         self.interim_reports_button.clicked.connect(self.backend.create_interim_reports)
         self.create_fdv_button.clicked.connect(self.create_fdv)
@@ -203,16 +199,12 @@ class FDVPage(QWidget):
                 self.depth_column_combo_box.setCurrentIndex(index)
 
         if self.selected_velocity_column:
-            index = self.velocity_column_combo_box.findText(
-                self.selected_velocity_column
-            )
+            index = self.velocity_column_combo_box.findText(self.selected_velocity_column)
             if index != -1:
                 self.velocity_column_combo_box.setCurrentIndex(index)
 
         if self.selected_rainfall_column:
-            index = self.rainfall_column_combo_box.findText(
-                self.selected_rainfall_column
-            )
+            index = self.rainfall_column_combo_box.findText(self.selected_rainfall_column)
             if index != -1:
                 self.rainfall_column_combo_box.setCurrentIndex(index)
 
@@ -247,14 +239,8 @@ class FDVPage(QWidget):
         self.selected_rainfall_column = self.rainfall_column_combo_box.currentText()
 
     def create_fdv(self):
-        depth_column = (
-            "" if self.selected_depth_column == "None" else self.selected_depth_column
-        )
-        velocity_column = (
-            ""
-            if self.selected_velocity_column == "None"
-            else self.selected_velocity_column
-        )
+        depth_column = ("" if self.selected_depth_column == "None" else self.selected_depth_column)
+        velocity_column = ("" if self.selected_velocity_column == "None" else self.selected_velocity_column)
 
         if self.pipe_size_field.text() is None or self.pipe_size_field.text() == "":
             pipe_size_param = 0
@@ -262,13 +248,8 @@ class FDVPage(QWidget):
         else:
             pipe_size_param = self.pipe_size_field.text()
 
-        self.backend.create_fdv(
-            self.site_name_field.text(),
-            self.pipe_shape_combo_box.currentText(),
-            pipe_size_param,
-            depth_column,
-            velocity_column,
-        )
+        self.backend.create_fdv(self.site_name_field.text(), self.pipe_shape_combo_box.currentText(), pipe_size_param,
+                                depth_column, velocity_column, )
 
     def create_rainfall(self):
         self.backend.create_rainfall(self.site_id, self.selected_rainfall_column)
