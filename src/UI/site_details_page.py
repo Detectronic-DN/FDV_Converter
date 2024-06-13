@@ -14,7 +14,6 @@ from PySide6.QtCore import Qt, Signal, Slot, QThread
 from src.logger.logger import Logger
 from src.worker.api_worker import Worker
 from src.worker.file_worker import UploadWorker
-from src.UI.fdv_page import FDVPage
 
 
 class SiteDetailsPage(QWidget):
@@ -27,6 +26,14 @@ class SiteDetailsPage(QWidget):
         """
         super().__init__()
 
+        self.logs_display = None
+        self.back_button = None
+        self.end_timestamp_label = None
+        self.site_name_label = None
+        self.start_timestamp_label = None
+        self.site_id_label = None
+        self.upload_input = None
+        self.site_id_input = None
         self.backend = backend
         self.stack = stack
         self.logger = Logger(__name__, emit_func=self.append_log)
@@ -62,7 +69,7 @@ class SiteDetailsPage(QWidget):
         self.endTimestamp = ""
         self.filePath = ""
         self.isBusy = False
-        self.folderpath = ""
+        self.folder_path = ""
 
         self.init_ui()
 
@@ -84,7 +91,7 @@ class SiteDetailsPage(QWidget):
 
         get_details_button = QPushButton("Get Site Details")
         get_details_button.clicked.connect(self.get_site_details)
-        layout.addWidget(get_details_button, alignment=Qt.AlignRight)
+        layout.addWidget(get_details_button, alignment=Qt.AlignmentFlag.AlignRight)
 
         # File Upload Section
         file_upload_layout = QHBoxLayout()
@@ -130,7 +137,7 @@ class SiteDetailsPage(QWidget):
         back_button_layout = QHBoxLayout()
         self.back_button = QPushButton("Back")
         self.back_button.clicked.connect(self.on_back_button_clicked)
-        back_button_layout.addWidget(self.back_button, alignment=Qt.AlignLeft)
+        back_button_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addLayout(back_button_layout)
 
         # Logs Display Section
@@ -163,10 +170,10 @@ class SiteDetailsPage(QWidget):
         Opens a folder dialog to select a folder.
         """
         folder_dialog = QFileDialog(self, "Select a Folder", "", "")
-        folder_dialog.setFileMode(QFileDialog.Directory)
+        folder_dialog.setFileMode(QFileDialog.FileMode.Directory)
         if folder_dialog.exec():
             folder_path = folder_dialog.selectedFiles()[0]
-            self.folderpath = folder_path
+            self.folder_path = folder_path
 
     def get_site_details(self) -> None:
         """
@@ -175,9 +182,9 @@ class SiteDetailsPage(QWidget):
         site_id = self.site_id_input.text().strip()
         if site_id:
             self.open_folder_dialog()
-            if self.folderpath:
+            if self.folder_path:
                 # Run the CSV download in a separate thread
-                self.worker.download_csv_file.emit(site_id, self.folderpath)
+                self.worker.download_csv_file.emit(site_id, self.folder_path)
             else:
                 self.logger.warning("Folder selection cancelled.")
         else:
