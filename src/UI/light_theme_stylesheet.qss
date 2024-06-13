@@ -1,0 +1,102 @@
+QWidget {
+  background-color: #ffffff;
+  color: #000000;
+}
+QLineEdit,
+QTextEdit {
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
+  padding: 5px;
+}
+QPushButton {
+  background-color: #f0f0f0;
+  border: 1px solid #cccccc;
+  padding: 6px 12px;
+  border-radius: 12px; /* Rounded corners */
+  font-size: 10px;
+  outline: none;
+}
+QPushButton:hover {
+  background-color: #e0e0e0;
+  border: 1px solid #bbbbbb;
+}
+QPushButton:pressed {
+  background-color: #d0d0d0;
+  border: 1px solid #aaaaaa;
+}
+QPushButton:disabled {
+  background-color: #f0f0f0;
+  color: #a0a0a0;
+  border: 1px solid #cccccc;
+}
+QMenuBar {
+  background-color: #ffffff;
+  color: #000000;
+}
+QMenuBar::item {
+  background-color: #ffffff;
+  color: #000000;
+}
+QMenuBar::item:selected {
+  background-color: #e0e0e0;
+}
+QMenu {
+  background-color: #ffffff;
+  color: #000000;
+}
+QMenu::item:selected {
+  background-color: #e0e0e0;
+}
+QTabWidget::pane {
+  border: 1px solid #cccccc;
+  background-color: #ffffff;
+}
+QTabBar::tab {
+  background-color: #f0f0f0;
+  color: #000000;
+  padding: 5px;
+  border: 1px solid #cccccc;
+  border-bottom: none;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+QTabBar::tab:selected {
+  background-color: #ffffff;
+  border-color: #cccccc;
+}
+QTabBar::tab:!selected {
+  margin-top: 2px;
+}
+QTabBar::tab:hover {
+  background-color: #e0e0e0;
+}
+QCheckBox {
+  spacing: 5px; /* spacing between the checkbox indicator and text */
+}
+
+QCheckBox::indicator {
+  width: 15px;
+  height: 15px;
+}
+
+QCheckBox::indicator:unchecked {
+  border: 1px solid #5a5a5a;
+  background-color: #eeeeee;
+}
+
+QCheckBox::indicator:checked {
+  border: 1px solid #5a5a5a;
+  background-color: #119ef0;
+}
+
+QCheckBox::indicator:unchecked:hover {
+  border: 1px solid #5a5a5a;
+  background-color: #dddddd;
+}
+
+QCheckBox::indicator:checked:hover {
+  border: 1px solid #5a5a5a;
+  background-color: #4a4a4a;
+}
