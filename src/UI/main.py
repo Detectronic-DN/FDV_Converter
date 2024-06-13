@@ -1,11 +1,9 @@
-import os
 import sys
 
-sys.path.append(os.getcwd())
 from PySide6.QtWidgets import QApplication
 
-from src.logger.logger import logger
 from src.UI.main_window import MainWindow
+from src.logger.logger import logger
 
 
 def main():
