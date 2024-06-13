@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
 from src.UI.login_page import LoginPage
 from src.UI.site_details_page import SiteDetailsPage
-from src.logger.logger import Logger
 from src.UI.fdv_page import FDVPage
 from src.backend.backend import Backend
 
@@ -13,7 +12,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
         self.setWindowTitle("FDV App")
-        self.setGeometry(100, 100, 540, 480)  # Adjusted window size
+        self.setGeometry(100, 100, 540, 480)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -32,11 +31,21 @@ class MainWindow(QMainWindow):
 
         central_layout.addWidget(self.stack)
 
+        # Connect signals to slots
         self.login_page.navigate_to_site_details.connect(self.show_site_details_page)
         self.site_details_page.back_button_clicked.connect(self.show_login_page)
         self.site_details_page.continue_to_next.connect(self.show_fdv_page)
 
+        # Apply the light theme stylesheet
+        self.apply_stylesheet('./light_theme_stylesheet.qss')
         self.show()
+
+    def apply_stylesheet(self, stylesheet_path):
+        """
+        Applies the stylesheet to the application.
+        """
+        with open(stylesheet_path, "r") as file:
+            self.setStyleSheet(file.read())
 
     def show_site_details_page(self) -> None:
         """
@@ -65,14 +74,14 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentWidget(fdv_page)
         fdv_page.back_button_clicked.connect(self.show_site_details_page)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         """
         Handles the close event to ensure all threads are properly closed.
         """
         self.cleanup()
         event.accept()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Cleans up any resources and threads.
         """
