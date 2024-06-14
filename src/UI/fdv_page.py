@@ -229,13 +229,13 @@ class FDVPage(QWidget):
     def on_error_occurred(self, error_message):
         self.fdv_logs_display.append(error_message)
 
-    def on_depth_column_selected(self, index):
+    def on_depth_column_selected(self):
         self.selected_depth_column = self.depth_column_combo_box.currentText()
 
-    def on_velocity_column_selected(self, index):
+    def on_velocity_column_selected(self):
         self.selected_velocity_column = self.velocity_column_combo_box.currentText()
 
-    def on_rainfall_column_selected(self, index):
+    def on_rainfall_column_selected(self):
         self.selected_rainfall_column = self.rainfall_column_combo_box.currentText()
 
     def create_fdv(self):
