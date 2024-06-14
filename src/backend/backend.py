@@ -1,27 +1,20 @@
 import os
+from typing import Optional
 import pandas as pd
 from PySide6.QtCore import QObject, Signal, Slot, QSettings, Property
 from PySide6.QtWidgets import QDialog
-from src.backend.timestamp import TimestampDialog
-from src.dd.get_csv_file import download_csv_file
-from src.dd.check_csv_file import check_and_fill_csv_file
-from src.logger.logger import Logger
+
 from src.FDV.FDV_converter import FDV_conversion
-from src.Interiem_reports.interim_reports import (
-    create_interim_report,
-    calculate_daily_summary,
-    save_interim_files,
-)
 from src.FDV.FDV_rainfall_converter import perform_R_conversion
+from src.Interiem_reports.interim_reports import (create_interim_report, calculate_daily_summary, save_interim_files, )
+from src.backend.timestamp import TimestampDialog
 from src.calculator.r3calculator import R3Calculator
+from src.dd.check_csv_file import check_and_fill_csv_file
+from src.dd.get_csv_file import download_csv_file
+from src.logger.logger import Logger
 
 
 class Backend(QObject):
-
-    @property
-    def final_file_path(self):
-        return self._final_file_path
-
     logMessage = Signal(str)
     siteDetailsRetrieved = Signal(str, str, str, str)
     errorOccurred = Signal(str)
@@ -47,15 +40,15 @@ class Backend(QObject):
         self.password = self.settings.value("password", "")
         self.base_url = "https://www.detecdata-en.com/API2.ashx/"
         self._final_file_path = ""
-        self._busy = False  # Busy state
+        self._busy = False
         self.logger = Logger(__name__, emit_func=self.emit_log_message)
         self.site_id = ""
         self.site_name = ""
         self.interval = ""
-        self.modified_start_timestamp = None
-        self.modified_end_timestamp = None
+        self.modified_start_timestamp: Optional[str] = None
+        self.modified_end_timestamp: Optional[str] = None
 
-    def emit_log_message(self, message: str):
+    def emit_log_message(self, message: str) -> None:
         """
         Emits a log message to the connected signal.
 
@@ -64,7 +57,7 @@ class Backend(QObject):
         """
         self.logMessage.emit(message)
 
-    def log_info(self, message: str):
+    def log_info(self, message: str) -> None:
         """
         Logs an informational message.
 
@@ -73,7 +66,7 @@ class Backend(QObject):
         """
         self.logger.info(message)
 
-    def log_error(self, message: str):
+    def log_error(self, message: str) -> None:
         """
         Logs an error message.
 
@@ -83,27 +76,27 @@ class Backend(QObject):
         self.logger.error(message)
 
     @Property
-    def busy(self):
+    def busy(self) -> bool:
         return self._busy
 
     @busy.setter
-    def busy(self, value):
+    def busy(self, value: bool) -> None:
         if self._busy != value:
             self._busy = value
             self.busyChanged.emit(value)
 
-    @Property
-    def final_file_path(self):
+    @property
+    def final_file_path(self) -> str:
         return self._final_file_path
 
     @final_file_path.setter
-    def final_file_path(self, value):
+    def final_file_path(self, value: str) -> None:
         if self._final_file_path != value:
             self._final_file_path = value
             self.finalFilePathChanged.emit(value)
 
     @Slot(str, str)
-    def save_login_details(self, username: str, password: str):
+    def save_login_details(self, username: str, password: str) -> None:
         """
         Save user login details to settings.
 
@@ -119,7 +112,7 @@ class Backend(QObject):
         self.loginSuccessful.emit()
 
     @Slot()
-    def clear_login_details(self):
+    def clear_login_details(self) -> None:
         """Clear user login details from settings."""
         self.settings.remove("username")
         self.settings.remove("password")
@@ -128,7 +121,7 @@ class Backend(QObject):
         self.log_info("Login details cleared.")
 
     @Slot(str, str)
-    def download_csv_file(self, site_id: str, folder_path: str):
+    def download_csv_file(self, site_id: str, folder_path: str) -> None:
         """
         Download CSV file for the given site ID.
 
@@ -139,27 +132,15 @@ class Backend(QObject):
         self.busy = True
         try:
             self.emit_log_message(f"Downloading CSV for site {site_id} to {folder_path}")
-            # noinspection PyTypeChecker
-            result = download_csv_file(
-                site_id, self.username, self.password, self.base_url, folder_path
-            )
+            result = download_csv_file(str(site_id), str(self.username), str(self.password), str(self.base_url),
+                                       str(folder_path))
 
             if result[0].startswith("Error"):
                 self.log_error(result[0])
                 self.errorOccurred.emit(result[0])
             else:
-                (
-                    site_id,
-                    site_name,
-                    start_timestamp,
-                    end_timestamp,
-                    csv_filepath,
-                    gaps,
-                    interval,
-                ) = result
-                start_time = pd.to_datetime(start_timestamp).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                (site_id, site_name, start_timestamp, end_timestamp, csv_filepath, gaps, interval,) = result
+                start_time = pd.to_datetime(start_timestamp).strftime("%Y-%m-%d %H:%M:%S")
                 end_time = pd.to_datetime(end_timestamp).strftime("%Y-%m-%d %H:%M:%S")
                 self.final_file_path = csv_filepath
                 self.site_id = site_id
@@ -176,7 +157,7 @@ class Backend(QObject):
             self.busy = False
 
     @Slot(str)
-    def upload_csv_file(self, filepath: str):
+    def upload_csv_file(self, filepath: str) -> None:
         """
         Upload and process the given CSV file.
 
@@ -189,9 +170,7 @@ class Backend(QObject):
             self._final_file_path = filepath
 
             # Check and fill CSV file
-            df, gaps, file_path, interval = check_and_fill_csv_file(
-                self._final_file_path
-            )
+            df, gaps, file_path, interval = check_and_fill_csv_file(self._final_file_path)
             self.log_info(f"There are {gaps} gaps in the data.")
             self.log_info(f"CSV File checked and gaps filled successfully")
 
@@ -212,9 +191,7 @@ class Backend(QObject):
             end_timestamp = df[time_col].max().strftime("%Y-%m-%d %H:%M:%S")
 
             # Emit signal with site details
-            self.siteDetailsRetrieved.emit(
-                site_id, site_name, start_timestamp, end_timestamp
-            )
+            self.siteDetailsRetrieved.emit(site_id, site_name, start_timestamp, end_timestamp)
             self.columnsRetrieved.emit(df.columns.tolist())  # Emit columns retrieved
             self.final_file_path = file_path
             self.log_info(f"Final file path set to {self.final_file_path}")
@@ -226,7 +203,7 @@ class Backend(QObject):
             self.busy = False
 
     @Slot()
-    def retrieve_columns(self):
+    def retrieve_columns(self) -> None:
         """Retrieve columns from the currently selected CSV file."""
         csv_file_name = self.final_file_path
         if csv_file_name:
@@ -245,7 +222,7 @@ class Backend(QObject):
             self.errorOccurred.emit(error_message)
 
     @Slot(str, str, result=list)
-    def edit_timestamps(self, start_timestamp, end_timestamp):
+    def edit_timestamps(self, start_timestamp: str, end_timestamp: str) -> list:
         """
         Edit the start and end timestamps.
 
@@ -256,15 +233,11 @@ class Backend(QObject):
         Returns:
             list: Updated start and end timestamps.
         """
-        self.log_info(
-            f"Editing timestamps: Start = {start_timestamp}, End = {end_timestamp}"
-        )
+        self.log_info(f"Editing timestamps: Start = {start_timestamp}, End = {end_timestamp}")
         dialog = TimestampDialog(start_timestamp, end_timestamp)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_start_timestamp, new_end_timestamp = dialog.get_timestamps()
-            self.log_info(
-                f"New timestamps: Start = {new_start_timestamp}, End = {new_end_timestamp}"
-            )
+            self.log_info(f"New timestamps: Start = {new_start_timestamp}, End = {new_end_timestamp}")
             self.modified_start_timestamp = new_start_timestamp
             self.modified_end_timestamp = new_end_timestamp
             self.modify_csv_file()
@@ -273,7 +246,7 @@ class Backend(QObject):
             self.log_info("Timestamp editing cancelled")
             return [start_timestamp, end_timestamp]
 
-    def modify_csv_file(self):
+    def modify_csv_file(self) -> None:
         """Modify the CSV file based on the new timestamps."""
         try:
             self.log_info("Modifying CSV file")
@@ -295,17 +268,12 @@ class Backend(QObject):
 
             # Apply the timestamp mask
             mask = (df[time_col] >= pd.to_datetime(self.modified_start_timestamp)) & (
-                df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
-            )
+                    df[time_col] <= pd.to_datetime(self.modified_end_timestamp))
             modified_df = df.loc[mask]
 
             # Save the modified file with a new name
-            filename, extension = os.path.splitext(
-                os.path.basename(self.final_file_path)
-            )
-            modified_filepath = os.path.join(
-                os.path.dirname(self.final_file_path), f"{filename}_modified{extension}"
-            )
+            filename, extension = os.path.splitext(os.path.basename(self.final_file_path))
+            modified_filepath = os.path.join(os.path.dirname(self.final_file_path), f"{filename}_modified{extension}")
             modified_df.to_csv(modified_filepath, index=False)
 
             # Update the file path and emit the signal
@@ -318,7 +286,8 @@ class Backend(QObject):
             self.errorOccurred.emit(error_message)
 
     @Slot(str, str, str, str, str)
-    def create_fdv(self, site_name, pipe_type, pipe_size_param, depth_col, velocity_col):
+    def create_fdv(self, site_name: str, pipe_type: str, pipe_size_param: str, depth_col: str,
+                   velocity_col: str) -> None:
         """
         Create an FDV file.
 
@@ -352,21 +321,9 @@ class Backend(QObject):
             os.makedirs(output_dir, exist_ok=True)
             output_file_name = os.path.join(output_dir, f"{site_name}.fdv")
 
-            null_readings = FDV_conversion(
-                csv_file_name,
-                output_file_name,
-                site_name,
-                start_date,
-                end_date,
-                interval,
-                pipe_type,
-                pipe_size_param,
-                depth_col,
-                velocity_col,
-            )
-            self.fdvCreated.emit(
-                f"FDV conversion completed. Null readings: {null_readings}"
-            )
+            null_readings = FDV_conversion(csv_file_name, output_file_name, site_name, start_date, end_date, interval,
+                                           pipe_type, pipe_size_param, depth_col, velocity_col, )
+            self.fdvCreated.emit(f"FDV conversion completed. Null readings: {null_readings}")
             self.log_info(f"FDV file created: {output_file_name}")
         except Exception as e:
             self.fdvError.emit(str(e))
@@ -375,7 +332,7 @@ class Backend(QObject):
             self.busy = False
 
     @Slot()
-    def create_interim_reports(self):
+    def create_interim_reports(self, input_file: str) -> None:
         """Create interim reports."""
         self.busy = True
         try:
@@ -399,9 +356,7 @@ class Backend(QObject):
             interval = pd.to_timedelta(self.interval)
             interval_seconds = int(interval.total_seconds())
 
-            report_df, values_df = create_interim_report(
-                df, flow_column, time_column, interval_seconds
-            )
+            report_df, values_df = create_interim_report(df, flow_column, time_column, interval_seconds)
             daily_summary = calculate_daily_summary(df, time_column, flow_column)
 
             output_dir = os.path.join(os.path.dirname(csv_file_name), "interim_reports")
@@ -410,19 +365,15 @@ class Backend(QObject):
             self.interimReportCreated.emit(f"Saving interim report to {output_dir}")
 
             # Save interim report and daily summary to Excel
-            excel_file_path = os.path.join(
-                output_dir,
-                f"{os.path.basename(csv_file_name).split('.')[0]}_interim_report.xlsx",
-            )
+            excel_file_path = os.path.join(output_dir,
+                                           f"{os.path.basename(csv_file_name).split('.')[0]}_interim_report.xlsx", )
             with pd.ExcelWriter(excel_file_path) as writer:
                 values_df.to_excel(writer, sheet_name="Values", index=False)
                 report_df.to_excel(writer, sheet_name="Summaries", index=False)
                 daily_summary.to_excel(writer, sheet_name="Daily", index=False)
 
             save_interim_files(report_df, daily_summary, output_dir)
-            self.interimReportCreated.emit(
-                f"Interim report created successfully at {output_dir}"
-            )
+            self.interimReportCreated.emit(f"Interim report created successfully at {output_dir}")
         except Exception as e:
             error_message = f"Exception occurred while creating interim report: {e}"
             self.log_error(error_message)
@@ -431,7 +382,7 @@ class Backend(QObject):
             self.busy = False
 
     @Slot(str, str)
-    def create_rainfall(self, site_name: str, rainfall_col: str):
+    def create_rainfall(self, site_name: str, rainfall_col: str) -> None:
         """
         Create a rainfall file.
 
@@ -463,18 +414,9 @@ class Backend(QObject):
             output_file_name = os.path.join(output_dir, f"{site_name}.r")
 
             try:
-                null_readings = perform_R_conversion(
-                    csv_file_name,
-                    output_file_name,
-                    site_name,
-                    start_date,
-                    end_date,
-                    interval,
-                    rainfall_col,
-                )
-                self.rainfallCreated.emit(
-                    f"Rainfall conversion completed. Null readings: {null_readings}"
-                )
+                null_readings = perform_R_conversion(csv_file_name, output_file_name, site_name, start_date, end_date,
+                                                     interval, rainfall_col, )
+                self.rainfallCreated.emit(f"Rainfall conversion completed. Null readings: {null_readings}")
                 self.log_info(f"Rainfall file created successfully: {output_file_name}")
             except Exception as e:
                 self.rainfallError.emit(str(e))
