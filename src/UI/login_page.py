@@ -78,6 +78,9 @@ class LoginPage(QWidget):
         form_layout = QVBoxLayout(self.login_frame)
 
         # Username
+        title_label = QLabel("DD+ Login")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        form_layout.addWidget(title_label)
         username_label = QLabel("Enter Username:")
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Username")
@@ -114,7 +117,6 @@ class LoginPage(QWidget):
         next_button = QPushButton("Next")
 
         buttons_layout.addWidget(skip_button)
-        buttons_layout.addStretch()
         buttons_layout.addWidget(next_button)
 
         form_layout.addLayout(buttons_layout)

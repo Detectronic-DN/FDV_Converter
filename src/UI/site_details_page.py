@@ -106,9 +106,9 @@ class SiteDetailsPage(QWidget):
         layout.addLayout(file_upload_layout)
 
         # Site Details Display Section
-        site_details_groupbox = QGroupBox("Site Details")
+        site_details_groupbox = QGroupBox()
+        site_details_groupbox.setTitle("Site Details")
         site_details_layout = QVBoxLayout()
-
         self.site_id_label = QLabel("Site ID: ")
         self.site_name_label = QLabel("Site Name: ")
         self.start_timestamp_label = QLabel("Start Timestamp: ")
@@ -137,7 +137,7 @@ class SiteDetailsPage(QWidget):
         back_button_layout = QHBoxLayout()
         self.back_button = QPushButton("Back")
         self.back_button.clicked.connect(self.on_back_button_clicked)
-        back_button_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignRight)
+        back_button_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
         layout.addLayout(back_button_layout)
 
         # Logs Display Section
