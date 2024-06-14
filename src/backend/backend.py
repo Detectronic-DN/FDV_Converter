@@ -332,7 +332,7 @@ class Backend(QObject):
             self.busy = False
 
     @Slot()
-    def create_interim_reports(self, input_file: str) -> None:
+    def create_interim_reports(self) -> None:
         """Create interim reports."""
         self.busy = True
         try:
