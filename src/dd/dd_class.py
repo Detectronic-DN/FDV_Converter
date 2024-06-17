@@ -292,7 +292,7 @@ class Dd:
             return None, None
 
     @staticmethod
-    def calculate_interval(timestamps: pd.Series) -> pd.Timedelta | None:
+    def calculate_interval(timestamps: pd.Series) -> Optional[pd.Timedelta] | None:
         """Calculate the most common interval between timestamps.
 
         Args:
@@ -492,7 +492,7 @@ class Dd:
             for column in df.columns:
                 if column != "Timestamp":
                     df[column] = df[column].astype(float).round(4)
-            sn = self.site_name.split(" ")[0]
+            sn = self.site_name.split(" ")[0] if self.site_name is not None else "site"
             df = df.loc[:, ~df.columns.str.contains("Battery")]
             csv_file_path = self.save_csv_file(df, sn, filepath)
 
