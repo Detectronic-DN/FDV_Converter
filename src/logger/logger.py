@@ -1,10 +1,10 @@
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, Dict
 from threading import Lock
 
 
 class Logger:
-    _instances = {}
+    _instances: Dict[str, 'Logger'] = {}
     _lock = Lock()
 
     def __new__(cls, function_name: str, *args, **kwargs):
@@ -25,27 +25,25 @@ class Logger:
 
         Args:
             function_name (str): The name of the function or module.
-            log_level (int): The log level (e.g., logging.DEBUG, logging.INFO).
+            log_level (int): The log level (e.g., logging. DEBUG, logging.INFO).
             emit_func (Optional[Callable[[str], None]]): If provided, log messages will be emitted to this function.
         """
         if hasattr(self, "initialized") and self.initialized:
             return
-        self.initialized = True
+        self.initialized: bool = True
 
         self.logger = logging.getLogger(function_name)
         self.logger.setLevel(log_level)
 
-        # Prevent adding multiple handlers to the same logger
         if not self.logger.hasHandlers():
-            # Log format
-            formatter = logging.Formatter("%(message)s")
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
 
-            # Console handler
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
 
-            # Optional GUI handler
             if emit_func:
 
                 class GuiHandler(logging.Handler):
@@ -76,5 +74,6 @@ class Logger:
     def debug(self, message: str):
         """Logs a debug message."""
         self.logger.debug(message)
+
 
 logger = Logger(__name__)
