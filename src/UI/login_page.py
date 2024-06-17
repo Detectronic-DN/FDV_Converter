@@ -1,16 +1,7 @@
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QCheckBox,
-    QSpacerItem,
-    QSizePolicy,
-    QFrame,
-)
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QCheckBox,
+                               QSpacerItem, QSizePolicy, QFrame, )
+
 from src.logger.logger import Logger
 
 
@@ -44,17 +35,19 @@ class LoginPage(QWidget):
         """
         super().__init__()
 
-        self.error_label = None
+        self.error_label = QLabel("")
         self.show_password_checkbox = None
-        self.password_input = None
-        self.username_input = None
-        self.login_frame = None
+        self.password_input = QLineEdit()
+        self.username_input = QLineEdit()
+        self.login_frame = QFrame()
         self.backend = backend
         self.logger = Logger(__name__)
         self.username: str = ""
         self.password: str = ""
 
         self.init_ui()
+        self.connect_signals()
+        self.load_saved_credentials()
 
     def init_ui(self) -> None:
         """
@@ -71,7 +64,7 @@ class LoginPage(QWidget):
         layout.addItem(top_spacer)
 
         # Create the frame for the login form without visible borders
-        self.login_frame = QFrame()
+
         self.login_frame.setFrameShape(QFrame.Shape.NoFrame)
         self.login_frame.setFixedSize(400, 200)
 
@@ -82,7 +75,6 @@ class LoginPage(QWidget):
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         form_layout.addWidget(title_label)
         username_label = QLabel("Enter Username:")
-        self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Username")
         self.username_input.textChanged.connect(self.clear_error)
         form_layout.addWidget(username_label)
@@ -90,7 +82,6 @@ class LoginPage(QWidget):
 
         # Password
         password_label = QLabel("Enter Password:")
-        self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Password")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.textChanged.connect(self.clear_error)
@@ -99,13 +90,10 @@ class LoginPage(QWidget):
 
         # Show Password Checkbox
         self.show_password_checkbox = QCheckBox("Show Password")
-        self.show_password_checkbox.stateChanged.connect(
-            self.toggle_password_visibility
-        )
+        self.show_password_checkbox.stateChanged.connect(self.toggle_password_visibility)
         form_layout.addWidget(self.show_password_checkbox)
 
         # Error message display
-        self.error_label = QLabel("")
         self.error_label.setStyleSheet("color: red;")
         self.error_label.setWordWrap(True)
         self.error_label.setVisible(False)
@@ -132,6 +120,14 @@ class LoginPage(QWidget):
         # Connections
         skip_button.clicked.connect(self.skip)
         next_button.clicked.connect(self.next)
+
+    def connect_signals(self) -> None:
+        """
+        Connects signals to the backend slots.
+        """
+        self.backend.loginSuccessful.connect(self.on_login_success)
+        self.backend.loginFailed.connect(self.on_login_failed)
+        self.backend.busyChanged.connect(self.on_busy_changed)
 
     def toggle_password_visibility(self) -> None:
         """
@@ -179,3 +175,39 @@ class LoginPage(QWidget):
             self.logger.error(f"Error in next action: {e}")
             self.error_label.setText("An error occurred. Please try again.")
             self.error_label.setVisible(True)
+
+    def load_saved_credentials(self):
+        """
+        Load the credentials from the backend.
+        """
+        try:
+            username, password = self.backend.get_login_details()
+            if username:
+                self.username_input.setText(username)
+            if password:
+                self.password_input.setText(password)
+        except Exception as e:
+            self.logger.error(f"Failed to Load the credentials: {e}")
+
+    def on_busy_changed(self, is_busy: bool) -> None:
+        """
+        Handles changes to the busy state.
+        """
+        if is_busy:
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
+
+    def on_login_success(self) -> None:
+        """
+        Handles successful login.
+        """
+        self.logger.info("Login successful")
+        self.navigate_to_site_details.emit()
+
+    def on_login_failed(self, message: str) -> None:
+        """
+        Handles failed login.
+        """
+        self.error_label.setText(message)
+        self.error_label.setVisible(True)
