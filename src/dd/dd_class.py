@@ -48,15 +48,11 @@ class Dd:
         self.password = password
         self.base_url = base_url
         self.logger = Logger(__name__)
-
-        # Site details
         self.site_id: Optional[str] = None
         self.site_name: Optional[str] = None
-
-        # Channel details
         self.channel_details_list: List[Dict[str, Any]] = []
 
-    def handle_authentication(self, endpoint: str) -> Optional[Dict[str, Any]]:
+    def _handle_authentication(self, endpoint: str) -> Optional[Dict[str, Any]]:
         """
         Authenticate to the API and return the JSON response.
 
@@ -128,7 +124,7 @@ class Dd:
         :return: The JSON response from the API, or None if the request failed.
         """
         site_url = f"{self.base_url}GetSite?siteId={site_id}"
-        return self.handle_authentication(site_url)
+        return self._handle_authentication(site_url)
 
     def map_site_details(self, site_id: str) -> bool:
         """
@@ -194,7 +190,7 @@ class Dd:
         :return: The JSON response from the API, or None if the request failed.
         """
         channel_url = f"{self.base_url}GetChannelDetails?{{'streamId':'{site_id}_{channel_number}'}}"
-        return self.handle_authentication(channel_url)
+        return self._handle_authentication(channel_url)
 
     def manage_channel_data(self, site_id: str) -> bool:
         """
@@ -233,7 +229,7 @@ class Dd:
             f"{self.base_url}GetData?{{'streamId':'{site_id}_{channel_number}',"
             f"'start': '{start_epoch}','end': '{end_epoch}'}}"
         )
-        return self.handle_authentication(stream_url)
+        return self._handle_authentication(stream_url)
 
     @staticmethod
     def prepare_stream_data(
