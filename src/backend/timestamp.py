@@ -37,7 +37,7 @@ class TimestampDialog(QDialog):
         layout.addWidget(self.end_edit)
 
         # OK and Cancel buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         button_box.accepted.connect(self.validate_timestamps)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
