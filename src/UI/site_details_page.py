@@ -201,7 +201,7 @@ class SiteDetailsPage(QWidget):
         Emits signal to continue to the next page.
         """
         self.continue_to_next.emit()
-        self.backend.retrieveColumns()
+        self.backend.retrieve_columns()
 
     @Slot()
     def on_back_button_clicked(self):
