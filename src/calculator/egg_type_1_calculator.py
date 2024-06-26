@@ -1,6 +1,7 @@
 import math
-from src.calculator.calculator_exception import CalculatorException
+
 from src.calculator.Calculator import Calculator
+from src.calculator.calculator_exception import CalculatorException
 from src.calculator.wetted_area_helper import WettedAreaCalculationHelper
 
 
@@ -40,7 +41,8 @@ class Egg1Calculator(Calculator):
         Calculates the flow based on the depth and velocity using the egg-shaped cross-section dimensions.
 
         Args:
-            inputs (List[float]): A list containing the depth of water and velocity.
+            velocity:
+            depth:
 
         Returns:
             float: The calculated flow value or 0.0 if the result is not a number.

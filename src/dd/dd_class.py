@@ -1,16 +1,17 @@
 import os
-import time
 import sys
+import time
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Optional, Any, List, Tuple, Union
 
 import pandas as pd
+import pendulum
+import pendulum.parsing
+import pendulum.parsing.exceptions
 import requests
 from pandas import DataFrame
 from requests.auth import HTTPDigestAuth as DigestAuth
 from requests.exceptions import RequestException
-
-sys.path.append(os.getcwd())
 
 from src.logger.logger import Logger, logger
 
@@ -292,7 +293,7 @@ class Dd:
             return None, None
 
     @staticmethod
-    def calculate_interval(timestamps: pd.Series) -> Optional[pd.Timedelta] | None:
+    def calculate_interval(timestamps: pd.Series) -> Optional[pd.Timedelta]:
         """Calculate the most common interval between timestamps.
 
         Args:
@@ -301,17 +302,35 @@ class Dd:
         Returns:
             Optional[pd.Timedelta]: The most common interval or None if it cannot be calculated.
         """
+        logger.info("Calculating the most common interval between timestamps.")
+
+        if timestamps.empty:
+            logger.warning("Timestamp series is empty.")
+            return None
+
         try:
-            logger.info("Calculating the most common interval between timestamps.")
+            # Ensure timestamps are sorted
+            timestamps = timestamps.sort_values()
+
+            # Calculate differences
             intervals = timestamps.diff().dropna()
-            if not intervals.empty:
-                mode_interval = intervals.mode().iloc[0]
-                logger.info(f"Most common interval calculated: {mode_interval}")
-                return mode_interval
-            else:
-                logger.warning("Intervals are empty, cannot calculate mode.")
+
+            if intervals.empty:
+                logger.warning("No valid intervals found between timestamps.")
                 return None
-        except (IndexError, TypeError, ValueError) as e:
+
+            # Calculate the mode
+            mode_interval = intervals.mode()
+
+            if mode_interval.empty:
+                logger.warning("Could not determine a mode interval.")
+                return None
+
+            result = mode_interval.iloc[0]
+            logger.info(f"Most common interval calculated: {result}")
+            return result
+
+        except Exception as e:
             logger.error(f"Error calculating interval: {e}")
             return None
 
@@ -337,26 +356,20 @@ class Dd:
             return None
 
     @staticmethod
-    def try_parsing_date(text: str) -> Optional[pd.Timestamp]:
-        """Try to parse a date string using multiple formats."""
-        date_formats = [
-            "%d/%m/%Y %H:%M",
-            "%m/%d/%Y %H:%M",
-            "%Y-%m-%d %H:%M:%S",
-            "%Y-%m-%d %H:%M",
-        ]
-        for fmt in date_formats:
-            try:
-                return pd.to_datetime(text, format=fmt)
-            except ValueError:
-                continue
-        return None
+    def try_parsing_date(text: str) -> Optional[pendulum.DateTime]:
+        """Try to parse a date string using Pendulum's automatic parsing."""
+        try:
+            return pendulum.parse(text, strict=False)
+        except (ValueError, pendulum.parsing.exceptions.ParserError):
+            return None
 
     @staticmethod
     def parse_dates(date_series: pd.Series) -> pd.Series:
-        """Parse dates with mixed formats."""
+        """Parse dates with mixed formats using Pendulum's automatic parsing."""
         try:
-            return date_series.apply(Dd.try_parsing_date)
+            parsed_dates = date_series.apply(Dd.try_parsing_date)
+            # Convert Pendulum objects to pandas Timestamp for compatibility
+            return parsed_dates.apply(lambda x: pd.Timestamp(x.to_iso8601_string()) if x else pd.NaT)
         except Exception as e:
             logger.error(f"Error parsing dates: {e}")
             return pd.Series([pd.NaT] * len(date_series))
