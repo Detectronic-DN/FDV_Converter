@@ -28,12 +28,9 @@ class InterimReportGenerator:
             self.df["L"] = self.df[flow_column] * self.interval_seconds
             self.df["m3"] = self.df["L"] / 1000
         elif self.monitor_type == "Depth":
-            # For depth, we don't need additional calculations
             pass
         elif self.monitor_type == "Rainfall":
-            # For rainfall, we might want to calculate cumulative rainfall
-            rainfall_column = self.columns['rainfall'][0]
-            self.df["Cumulative_Rainfall"] = self.df[rainfall_column].cumsum()
+            pass
         return self.df
 
     def generate_summaries(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
