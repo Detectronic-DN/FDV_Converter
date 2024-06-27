@@ -5,7 +5,7 @@ from datetime import timedelta
 
 def calculate_flow_values(df, flow_col, interval):
     """
-    Calculate flow values based on the given dataframe, flow column, and interval rate.
+    Calculate flow values based on the given self, flow column, and interval rate.
 
     Args:
         df (pd.DataFrame): DataFrame containing flow data.
@@ -20,13 +20,13 @@ def calculate_flow_values(df, flow_col, interval):
         df["m3"] = df["L"] / 1000
         return df
     except KeyError:
-        print(f"Error: Column '{flow_col}' not found in the dataframe.")
+        print(f"Error: Column '{flow_col}' not found in the self.")
         return df
 
 
 def generate_summaries(df, flow_column, time_column, start_date=None, end_date=None):
     """
-    Generate summaries for the given dataframe based on the given flow column, time column, and interval rate.
+    Generate summaries for the given self based on the given flow column, time column, and interval rate.
 
     Args:
         df (pd.DataFrame): DataFrame containing flow data.
@@ -94,7 +94,7 @@ def generate_summaries(df, flow_column, time_column, start_date=None, end_date=N
 
 def create_interim_report(df, flow_column, time_column, interval):
     """
-    Create an interim report for the given dataframe based on the given flow column, time column, and interval rate.
+    Create an interim report for the given self based on the given flow column, time column, and interval rate.
 
     Args:
         df (pd.DataFrame): DataFrame containing flow data.
