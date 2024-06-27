@@ -1,7 +1,8 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
+
+from src.UI.fdv_page import FDVPage
 from src.UI.login_page import LoginPage
 from src.UI.site_details_page import SiteDetailsPage
-from src.UI.fdv_page import FDVPage
 from src.backend.backend import Backend
 
 
