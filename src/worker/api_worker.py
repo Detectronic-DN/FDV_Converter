@@ -17,11 +17,12 @@ class Worker(QObject):
         self.download_csv_file.connect(self.perform_download_csv_file)
 
     @Slot(str, str)
-    def perform_download_csv_file(self, site_id, folderpath):
+    def perform_download_csv_file(self, site_id, folder_path):
         self.busyChanged.emit(True)
         try:
             self._connect_signals()
-            self.backend.download_csv_file(site_id, folderpath)
+            print(folder_path)
+            self.backend.download_csv_file(site_id, folder_path)
         finally:
             self.busyChanged.emit(False)
 
