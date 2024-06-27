@@ -37,7 +37,7 @@ class Logger:
 
         if not self.logger.hasHandlers():
             formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+                "%(message)s"
             )
 
             console_handler = logging.StreamHandler()
