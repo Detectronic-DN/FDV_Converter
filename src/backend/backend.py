@@ -1,52 +1,58 @@
 import os
-from typing import Optional
+import re
+from typing import Tuple, Dict, Optional
+
+import keyring
 import pandas as pd
-from PySide6.QtCore import QObject, Signal, Slot, QSettings, Property
+from PySide6.QtCore import QObject, Signal, Slot, QSettings
 from PySide6.QtWidgets import QDialog
 
 from src.FDV.FDV_converter import FDV_conversion
 from src.FDV.FDV_rainfall_converter import perform_R_conversion
-from src.Interiem_reports.interim_reports import (create_interim_report, calculate_daily_summary, save_interim_files, )
-from src.backend.timestamp import TimestampDialog
 from src.calculator.r3calculator import R3Calculator
-from src.dd.check_csv_file import check_and_fill_csv_file
-from src.dd.get_csv_file import download_csv_file
+from src.backend.timestamp import TimestampDialog
+from src.Interiem_reports.Interim_Class import InterimReportGenerator
+from src.dd.dd_class import Dd
 from src.logger.logger import Logger
 
 
 class Backend(QObject):
     logMessage = Signal(str)
-    siteDetailsRetrieved = Signal(str, str, str, str)
     errorOccurred = Signal(str)
     loginSuccessful = Signal()
     loginFailed = Signal(str)
-    csvFileUploaded = Signal(str, str, str, str)
-    finalFilePathChanged = Signal(str)
-    columnsRetrieved = Signal(list)
     busyChanged = Signal(bool)
+    siteDetailsRetrieved = Signal(str, str, str, str)
+    columnsRetrieved = Signal(list)
+    finalFilePathChanged = Signal(str)
     fdvCreated = Signal(str)
     fdvError = Signal(str)
-    interimReportCreated = Signal(str)
     rainfallCreated = Signal(str)
     rainfallError = Signal(str)
+    interimReportCreated = Signal(str)
 
     def __init__(self):
         """
         Initializes the backend, retrieves stored credentials, and sets up logging.
         """
         super().__init__()
+        self.modified_end_timestamp = None
+        self.modified_start_timestamp = None
+        self._final_file_path = None
+        self.interval = None
+        self.site_name = None
+        self.site_id = None
+        self.final_file_path = None
         self.settings = QSettings("Detectronic", "FDV_UI")
+        self.service_name = "FDV Converter"
         self.username = self.settings.value("username", "")
         self.password = self.settings.value("password", "")
         self.base_url = "https://www.detecdata-en.com/API2.ashx/"
-        self._final_file_path = ""
         self._busy = False
         self.logger = Logger(__name__, emit_func=self.emit_log_message)
-        self.site_id = ""
-        self.site_name = ""
-        self.interval = ""
-        self.modified_start_timestamp: Optional[str] = None
-        self.modified_end_timestamp: Optional[str] = None
+        self.dd_instance = None
+        self.column_map = {}
+        self.monitor_type = None
 
     def emit_log_message(self, message: str) -> None:
         """
@@ -75,7 +81,7 @@ class Backend(QObject):
         """
         self.logger.error(message)
 
-    @Property
+    @property
     def busy(self) -> bool:
         return self._busy
 
@@ -108,7 +114,10 @@ class Backend(QObject):
         self.password = password
         self.settings.setValue("username", username)
         self.settings.setValue("password", password)
+        keyring.set_password(self.service_name, "username", username)
+        keyring.set_password(self.service_name, "password", password)
         self.log_info("Credentials saved successfully.")
+        self.dd_instance = Dd(self.username, self.password, self.base_url)
         self.loginSuccessful.emit()
 
     @Slot()
@@ -119,6 +128,22 @@ class Backend(QObject):
         self.username = ""
         self.password = ""
         self.log_info("Login details cleared.")
+
+    @Slot()
+    def get_login_details(self) -> Tuple[str | None, str | None]:
+        """
+        Retrieves the login details from keyring.
+
+        Returns:
+            tuple: A tuple containing the username and password.
+        """
+        try:
+            username = keyring.get_password(self.service_name, "username")
+            password = keyring.get_password(self.service_name, "password")
+            return username, password
+        except Exception as e:
+            self.logger.error(f"Failed to retrieve login details: {e}")
+            return None, None
 
     @Slot(str, str)
     def download_csv_file(self, site_id: str, folder_path: str) -> None:
@@ -131,30 +156,144 @@ class Backend(QObject):
         """
         self.busy = True
         try:
-            self.emit_log_message(f"Downloading CSV for site {site_id} to {folder_path}")
-            result = download_csv_file(str(site_id), str(self.username), str(self.password), str(self.base_url),
-                                       str(folder_path))
+            self.emit_log_message(
+                f"Downloading CSV for site {site_id} to {folder_path}"
+            )
+            result = self.dd_instance.download_csv_file(site_id, folder_path)
 
             if result[0].startswith("Error"):
-                self.log_error(result[0])
-                self.errorOccurred.emit(result[0])
-            else:
-                (site_id, site_name, start_timestamp, end_timestamp, csv_filepath, gaps, interval,) = result
-                start_time = pd.to_datetime(start_timestamp).strftime("%Y-%m-%d %H:%M:%S")
-                end_time = pd.to_datetime(end_timestamp).strftime("%Y-%m-%d %H:%M:%S")
-                self.final_file_path = csv_filepath
-                self.site_id = site_id
-                self.site_name = site_name
-                self.interval = interval
-                self.siteDetailsRetrieved.emit(site_id, site_name, start_time, end_time)
-                self.log_info(f"There are {gaps} gaps in the CSV File.")
-                self.log_info(f"CSV file downloaded and saved to {csv_filepath}")
+                raise ValueError(result[0])
+
+            (
+                site_id,
+                site_name,
+                start_timestamp,
+                end_timestamp,
+                csv_filepath,
+                gaps,
+                interval,
+            ) = result
+            start_time = pd.to_datetime(start_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+            end_time = pd.to_datetime(end_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+
+            self.final_file_path = csv_filepath
+            self.site_id = site_id
+            self.site_name = site_name
+            self.interval = interval
+
+            self.siteDetailsRetrieved.emit(site_id, site_name, start_time, end_time)
+            self.log_info(f"There are {gaps} gaps in the CSV File.")
+            self.log_info(f"CSV file downloaded and saved to {csv_filepath}")
+
+        except ValueError as ve:
+            self.log_error(str(ve))
+            self.errorOccurred.emit(str(ve))
         except Exception as e:
-            error_message = f"Exception occurred while downloading CSV file: {e}"
+            error_message = f"Unexpected error occurred while downloading CSV file: {e}"
             self.log_error(error_message)
             self.errorOccurred.emit(error_message)
         finally:
             self.busy = False
+
+    @staticmethod
+    def identify_timestamp_column(df: pd.DataFrame) -> str:
+        """
+        Identifies the timestamp column using common timestamp keywords.
+
+        Args:
+            df (pd.DataFrame): The DataFrame containing the data.
+
+        Returns:
+            str: The name of the timestamp column.
+        """
+        timestamp_keywords = [
+            "timestamp",
+            "Time Stamp",
+            "time",
+            "TimeStamp",
+            "Timestamp",
+        ]
+        for col in df.columns:
+            if any(keyword.lower() in col.lower() for keyword in timestamp_keywords):
+                return col
+        raise ValueError("Timestamp column not found.")
+
+    def get_column_names_and_indices(
+        self, file_name: str, df: pd.DataFrame
+    ) -> Dict[str, Tuple[str, int]]:
+        """
+        Extract and validate column names and their indices based on the monitor type identified from the file name.
+
+        Args:
+            file_name (str): Name of the file to identify the monitor type.
+            df (pd.DataFrame): DataFrame containing the CSV data.
+
+        Returns:
+            dict: A dictionary with the required columns and their indices.
+        """
+        column_mapping = {}
+
+        # Define patterns for dynamic column matching
+        depth_pattern = re.compile(r"\d+_\d+\|Depth\|m")
+        flow_pattern = re.compile(r"\d+_\d+\|Flow\|l/s")
+        velocity_pattern = re.compile(r"\d+_\d+\|Velocity\|m/s")
+        rainfall_pattern = re.compile(r"Rainfall")
+
+        # Identify the timestamp column
+        timestamp_col = self.identify_timestamp_column(df)
+        column_mapping["timestamp"] = (timestamp_col, df.columns.get_loc(timestamp_col))
+
+        if file_name.startswith("DM"):
+            self.monitor_type = "Depth"
+            # Depth Monitor
+            depth_col = next(
+                (col for col in df.columns if depth_pattern.match(col)), None
+            )
+            if depth_col:
+                column_mapping["depth"] = (depth_col, df.columns.get_loc(depth_col))
+            else:
+                raise ValueError("Required depth column not found for Depth Monitor.")
+        elif file_name.startswith("FM"):
+            self.monitor_type = "Flow"
+            # Flow Monitor
+            flow_col = next(
+                (col for col in df.columns if flow_pattern.match(col)), None
+            )
+            depth_col = next(
+                (col for col in df.columns if depth_pattern.match(col)), None
+            )
+            velocity_col = next(
+                (col for col in df.columns if velocity_pattern.match(col)), None
+            )
+
+            if flow_col and depth_col and velocity_col:
+                column_mapping["flow"] = (flow_col, df.columns.get_loc(flow_col))
+                column_mapping["depth"] = (depth_col, df.columns.get_loc(depth_col))
+                column_mapping["velocity"] = (
+                    velocity_col,
+                    df.columns.get_loc(velocity_col),
+                )
+            else:
+                raise ValueError("Required columns not found for Flow Monitor.")
+        elif file_name.startswith("RG"):
+            self.monitor_type = "Rainfall"
+            # Rainfall Gauge Monitor
+            rainfall_col = next(
+                (col for col in df.columns if rainfall_pattern.match(col)), None
+            )
+            if rainfall_col:
+                column_mapping["rainfall"] = (
+                    rainfall_col,
+                    df.columns.get_loc(rainfall_col),
+                )
+            else:
+                raise ValueError(
+                    "Required rainfall column not found for Rainfall Gauge Monitor."
+                )
+        else:
+            raise ValueError("Unknown monitor type based on file name.")
+
+        return column_mapping
 
     @Slot(str)
     def upload_csv_file(self, filepath: str) -> None:
@@ -170,9 +309,13 @@ class Backend(QObject):
             self._final_file_path = filepath
 
             # Check and fill CSV file
-            df, gaps, file_path, interval = check_and_fill_csv_file(self._final_file_path)
+            result = self.dd_instance.check_and_fill_csv_file(self._final_file_path)
+            if result is None:
+                raise ValueError("Failed to check and fill the CSV file.")
+
+            df, gaps, file_path, interval = result
             self.log_info(f"There are {gaps} gaps in the data.")
-            self.log_info(f"CSV File checked and gaps filled successfully")
+            self.log_info("CSV file checked and gaps filled successfully")
 
             # Extract site ID and site name from the file name
             file_name = os.path.basename(file_path)
@@ -183,18 +326,24 @@ class Backend(QObject):
             self.site_name = site_name
             self.interval = interval
 
+            time_col = self.identify_timestamp_column(df)
+
             # Process the DataFrame to extract timestamps
-            time_col = df.columns[0]
             df[time_col] = pd.to_datetime(df[time_col])
             df.sort_values(by=time_col, inplace=True)
             start_timestamp = df[time_col].min().strftime("%Y-%m-%d %H:%M:%S")
             end_timestamp = df[time_col].max().strftime("%Y-%m-%d %H:%M:%S")
 
             # Emit signal with site details
-            self.siteDetailsRetrieved.emit(site_id, site_name, start_timestamp, end_timestamp)
-            self.columnsRetrieved.emit(df.columns.tolist())  # Emit columns retrieved
+            self.siteDetailsRetrieved.emit(
+                site_id, site_name, start_timestamp, end_timestamp
+            )
+            self.columnsRetrieved.emit(df.columns.tolist())
             self.final_file_path = file_path
             self.log_info(f"Final file path set to {self.final_file_path}")
+        except ValueError as ve:
+            self.log_error(str(ve))
+            self.errorOccurred.emit(str(ve))
         except Exception as e:
             error_message = f"Exception occurred while uploading file: {e}"
             self.log_error(error_message)
@@ -204,18 +353,34 @@ class Backend(QObject):
 
     @Slot()
     def retrieve_columns(self) -> None:
-        """Retrieve columns from the currently selected CSV file."""
-        csv_file_name = self.final_file_path
-        if csv_file_name:
+        """
+        Retrieve columns and their indices from the currently selected CSV file based on the monitor type.
+        """
+        if self.final_file_path:
             try:
-                df = pd.read_csv(csv_file_name)
-                columns = df.columns.tolist()
-                self.columnsRetrieved.emit(columns)
-                self.log_info(f"Columns retrieved: {columns}")
+                df = pd.read_csv(self.final_file_path)
+                file_name = os.path.basename(self.final_file_path)
+                self.column_map = self.get_column_names_and_indices(file_name, df)
+
+                columns_with_indices = {
+                    key: (val[0], val[1]) for key, val in self.column_map.items()
+                }
+
+                self.columnsRetrieved.emit(
+                    [f"{val[0]}" for val in self.column_map.values()]
+                )
+                self.log_info(f"Columns retrieved: {columns_with_indices}")
+
+            except ValueError as ve:
+                error_message = f"ValueError retrieving columns: {str(ve)}"
+                self.log_error(error_message)
+                self.errorOccurred.emit(error_message)
+
             except Exception as e:
                 error_message = f"Error retrieving columns: {str(e)}"
                 self.log_error(error_message)
                 self.errorOccurred.emit(error_message)
+
         else:
             error_message = "No CSV file selected."
             self.log_error(error_message)
@@ -233,11 +398,15 @@ class Backend(QObject):
         Returns:
             list: Updated start and end timestamps.
         """
-        self.log_info(f"Editing timestamps: Start = {start_timestamp}, End = {end_timestamp}")
+        self.log_info(
+            f"Editing timestamps: Start = {start_timestamp}, End = {end_timestamp}"
+        )
         dialog = TimestampDialog(start_timestamp, end_timestamp)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             new_start_timestamp, new_end_timestamp = dialog.get_timestamps()
-            self.log_info(f"New timestamps: Start = {new_start_timestamp}, End = {new_end_timestamp}")
+            self.log_info(
+                f"New timestamps: Start = {new_start_timestamp}, End = {new_end_timestamp}"
+            )
             self.modified_start_timestamp = new_start_timestamp
             self.modified_end_timestamp = new_end_timestamp
             self.modify_csv_file()
@@ -261,19 +430,25 @@ class Backend(QObject):
             # Read the CSV file
             df = pd.read_csv(self.final_file_path)
             self.log_info(f"Loaded file from {self.final_file_path}")
+            file_name = os.path.basename(self.final_file_path)
 
             # Convert the timestamp column to datetime
-            time_col = df.columns[0]
+            time_col = self.identify_timestamp_column(df)
             df[time_col] = pd.to_datetime(df[time_col])
 
             # Apply the timestamp mask
             mask = (df[time_col] >= pd.to_datetime(self.modified_start_timestamp)) & (
-                    df[time_col] <= pd.to_datetime(self.modified_end_timestamp))
+                df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
+            )
             modified_df = df.loc[mask]
 
             # Save the modified file with a new name
-            filename, extension = os.path.splitext(os.path.basename(self.final_file_path))
-            modified_filepath = os.path.join(os.path.dirname(self.final_file_path), f"{filename}_modified{extension}")
+            filename, extension = os.path.splitext(
+                os.path.basename(self.final_file_path)
+            )
+            modified_filepath = os.path.join(
+                os.path.dirname(self.final_file_path), f"{filename}_modified{extension}"
+            )
             modified_df.to_csv(modified_filepath, index=False)
 
             # Update the file path and emit the signal
@@ -286,8 +461,14 @@ class Backend(QObject):
             self.errorOccurred.emit(error_message)
 
     @Slot(str, str, str, str, str)
-    def create_fdv(self, site_name: str, pipe_type: str, pipe_size_param: str, depth_col: str,
-                   velocity_col: str) -> None:
+    def create_fdv(
+        self,
+        site_name: str,
+        pipe_type: str,
+        pipe_size_param: str,
+        depth_col: Optional[str],
+        velocity_col: Optional[str],
+    ) -> None:
         """
         Create an FDV file.
 
@@ -302,12 +483,12 @@ class Backend(QObject):
         try:
             csv_file_name = self.final_file_path
             df = pd.read_csv(csv_file_name)
-            columns = df.columns
-            df[columns[0]] = pd.to_datetime(df[columns[0]])
-            df.sort_values(by=columns[0], inplace=True)
+            time_col = self.identify_timestamp_column(df)
+            df[time_col] = pd.to_datetime(df[time_col])
+            df.sort_values(by=time_col, inplace=True)
             df.reset_index(drop=True, inplace=True)
-            start_date = df[columns[0]].min()
-            end_date = df[columns[0]].max()
+            start_date = df[time_col].min()
+            end_date = df[time_col].max()
             interval = pd.to_timedelta(self.interval)
 
             # Handle "None" option for columns
@@ -321,63 +502,25 @@ class Backend(QObject):
             os.makedirs(output_dir, exist_ok=True)
             output_file_name = os.path.join(output_dir, f"{site_name}.fdv")
 
-            null_readings = FDV_conversion(csv_file_name, output_file_name, site_name, start_date, end_date, interval,
-                                           pipe_type, pipe_size_param, depth_col, velocity_col, )
-            self.fdvCreated.emit(f"FDV conversion completed. Null readings: {null_readings}")
+            null_readings = FDV_conversion(
+                csv_file_name,
+                output_file_name,
+                site_name,
+                start_date,
+                end_date,
+                interval,
+                pipe_type,
+                pipe_size_param,
+                depth_col,
+                velocity_col,
+            )
+            self.fdvCreated.emit(
+                f"FDV conversion completed. Null readings: {null_readings}"
+            )
             self.log_info(f"FDV file created: {output_file_name}")
         except Exception as e:
             self.fdvError.emit(str(e))
             self.log_error(f"Error creating FDV file: {e}")
-        finally:
-            self.busy = False
-
-    @Slot()
-    def create_interim_reports(self) -> None:
-        """Create interim reports."""
-        self.busy = True
-        try:
-            self.log_info("Creating interim reports")
-            csv_file_name = self.final_file_path
-            if not csv_file_name:
-                error_message = "No CSV file selected."
-                self.log_error(error_message)
-                self.errorOccurred.emit(error_message)
-                return
-
-            self.log_info(f"Loading file from {csv_file_name}")
-            df = pd.read_csv(csv_file_name)
-            columns = df.columns
-            time_column = columns[0]
-            flow_column = columns[1]
-            df[time_column] = pd.to_datetime(df[time_column])
-            df.sort_values(by=time_column, inplace=True)
-            df.reset_index(drop=True, inplace=True)
-
-            interval = pd.to_timedelta(self.interval)
-            interval_seconds = int(interval.total_seconds())
-
-            report_df, values_df = create_interim_report(df, flow_column, time_column, interval_seconds)
-            daily_summary = calculate_daily_summary(df, time_column, flow_column)
-
-            output_dir = os.path.join(os.path.dirname(csv_file_name), "interim_reports")
-            os.makedirs(output_dir, exist_ok=True)
-
-            self.interimReportCreated.emit(f"Saving interim report to {output_dir}")
-
-            # Save interim report and daily summary to Excel
-            excel_file_path = os.path.join(output_dir,
-                                           f"{os.path.basename(csv_file_name).split('.')[0]}_interim_report.xlsx", )
-            with pd.ExcelWriter(excel_file_path) as writer:
-                values_df.to_excel(writer, sheet_name="Values", index=False)
-                report_df.to_excel(writer, sheet_name="Summaries", index=False)
-                daily_summary.to_excel(writer, sheet_name="Daily", index=False)
-
-            save_interim_files(report_df, daily_summary, output_dir)
-            self.interimReportCreated.emit(f"Interim report created successfully at {output_dir}")
-        except Exception as e:
-            error_message = f"Exception occurred while creating interim report: {e}"
-            self.log_error(error_message)
-            self.errorOccurred.emit(error_message)
         finally:
             self.busy = False
 
@@ -394,12 +537,13 @@ class Backend(QObject):
         try:
             csv_file_name = self.final_file_path
             df = pd.read_csv(csv_file_name)
-            columns = df.columns
-            df[columns[0]] = pd.to_datetime(df[columns[0]])
-            df.sort_values(by=columns[0], inplace=True)
+
+            time_col = self.identify_timestamp_column(df)
+            df[time_col] = pd.to_datetime(df[time_col])
+            df.sort_values(by=time_col, inplace=True)
             df.reset_index(drop=True, inplace=True)
-            start_date = df[columns[0]].min()
-            end_date = df[columns[0]].max()
+            start_date = df[time_col].min()
+            end_date = df[time_col].max()
             interval = pd.to_timedelta(self.interval)
 
             # Handle "None" option for rainfall column
@@ -414,9 +558,18 @@ class Backend(QObject):
             output_file_name = os.path.join(output_dir, f"{site_name}.r")
 
             try:
-                null_readings = perform_R_conversion(csv_file_name, output_file_name, site_name, start_date, end_date,
-                                                     interval, rainfall_col, )
-                self.rainfallCreated.emit(f"Rainfall conversion completed. Null readings: {null_readings}")
+                null_readings = perform_R_conversion(
+                    csv_file_name,
+                    output_file_name,
+                    site_name,
+                    start_date,
+                    end_date,
+                    interval,
+                    rainfall_col,
+                )
+                self.rainfallCreated.emit(
+                    f"Rainfall conversion completed. Null readings: {null_readings}"
+                )
                 self.log_info(f"Rainfall file created successfully: {output_file_name}")
             except Exception as e:
                 self.rainfallError.emit(str(e))
@@ -454,3 +607,44 @@ class Backend(QObject):
         except Exception as e:
             self.log_error(f"Error calculating R3 value: {str(e)}")
             return -1.0
+
+    @Slot()
+    def create_interim_reports(self) -> None:
+        """Create interim reports."""
+        self.busy = True
+        try:
+            self.log_info("Creating interim reports")
+            if not self.final_file_path:
+                error_message = "No CSV file selected."
+                self.log_error(error_message)
+                self.errorOccurred.emit(error_message)
+                return
+
+            generator = InterimReportGenerator(self)
+            report_df, values_df, daily_summary = generator.generate_report()
+
+            output_dir = os.path.join(os.path.dirname(self.final_file_path), "interim_reports")
+            os.makedirs(output_dir, exist_ok=True)
+
+            self.interimReportCreated.emit(f"Saving interim report to {output_dir}")
+
+            # Save interim report and daily summary to Excel
+            excel_file_path = os.path.join(
+                output_dir,
+                f"{os.path.basename(self.final_file_path).split('.')[0]}_interim_report.xlsx",
+            )
+            with pd.ExcelWriter(excel_file_path) as writer:
+                values_df.to_excel(writer, sheet_name="Values", index=False)
+                report_df.to_excel(writer, sheet_name="Summaries", index=False)
+                daily_summary.to_excel(writer, sheet_name="Daily", index=False)
+
+            generator.save_interim_files(report_df, daily_summary, output_dir)
+            self.interimReportCreated.emit(
+                f"Interim report created successfully at {output_dir}"
+            )
+        except Exception as e:
+            error_message = f"Exception occurred while creating interim report: {e}"
+            self.log_error(error_message)
+            self.errorOccurred.emit(error_message)
+        finally:
+            self.busy = False
