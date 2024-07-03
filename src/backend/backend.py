@@ -130,7 +130,7 @@ class Backend(QObject):
         self.log_info("Login details cleared.")
 
     @Slot()
-    def get_login_details(self) -> Tuple[str | None, str | None]:
+    def get_login_details(self) -> Tuple[Optional[str], Optional[str]]:
         """
         Retrieves the login details from keyring.
 
@@ -623,7 +623,9 @@ class Backend(QObject):
             generator = InterimReportGenerator(self)
             report_df, values_df, daily_summary = generator.generate_report()
 
-            output_dir = os.path.join(os.path.dirname(self.final_file_path), "interim_reports")
+            output_dir = os.path.join(
+                os.path.dirname(self.final_file_path), "interim_reports"
+            )
             os.makedirs(output_dir, exist_ok=True)
 
             self.interimReportCreated.emit(f"Saving interim report to {output_dir}")
