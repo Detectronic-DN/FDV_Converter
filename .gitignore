@@ -47,6 +47,8 @@ main.build
 *.r
 *.dat
 data/
+*.zip
+
 
 
 # Editor directories and files
