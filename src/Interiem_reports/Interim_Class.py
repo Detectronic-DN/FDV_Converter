@@ -198,7 +198,8 @@ class InterimReportGenerator:
         Generates the interim report, including summaries and daily summaries.
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: The summary DataFrame, the original DataFrame, and the daily summary DataFrame.
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: The summary DataFrame, the original DataFrame,
+            and the daily summary DataFrame.
         """
         try:
             self.calculate_values()
@@ -253,7 +254,7 @@ class InterimReportGenerator:
 
         Args:
             summaries_df (pd.DataFrame): The DataFrame containing the summary data.
-            values_df (pd.DataFrame): The original DataFrame containing the values data.
+            values_df (pd.DataFrame): The original DataFrame containing the value's data.
             daily_summary (pd.DataFrame): The DataFrame containing the daily summary data.
             output_dir (str): The directory to save the final report.
         """
