@@ -621,28 +621,16 @@ class Backend(QObject):
                 return
 
             generator = InterimReportGenerator(self)
-            report_df, values_df, daily_summary = generator.generate_report()
+            summaries_df, values_df, daily_summary = generator.generate_report()
 
             output_dir = os.path.join(
-                os.path.dirname(self.final_file_path), "interim_reports"
+                os.path.dirname(self.final_file_path), "final_report"
             )
-            os.makedirs(output_dir, exist_ok=True)
-
-            self.interimReportCreated.emit(f"Saving interim report to {output_dir}")
-
-            # Save interim report and daily summary to Excel
-            excel_file_path = os.path.join(
-                output_dir,
-                f"{os.path.basename(self.final_file_path).split('.')[0]}_interim_report.xlsx",
+            generator.save_final_report(
+                summaries_df, values_df, daily_summary, output_dir
             )
-            with pd.ExcelWriter(excel_file_path) as writer:
-                values_df.to_excel(writer, sheet_name="Values", index=False)
-                report_df.to_excel(writer, sheet_name="Summaries", index=False)
-                daily_summary.to_excel(writer, sheet_name="Daily", index=False)
-
-            generator.save_interim_files(report_df, daily_summary, output_dir)
             self.interimReportCreated.emit(
-                f"Interim report created successfully at {output_dir}"
+                f"Final report created successfully at {output_dir}"
             )
         except Exception as e:
             error_message = f"Exception occurred while creating interim report: {e}"
