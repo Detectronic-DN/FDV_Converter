@@ -11,9 +11,9 @@ class InterimReportGenerator:
         Initializes the InterimReportGenerator with the provided backend.
         """
         self.backend = backend
-        self.df = self.load_data()
-        self.monitor_type = self.backend.monitor_type
         self.columns = self.backend.column_map
+        self.monitor_type = self.backend.monitor_type
+        self.df = self.load_data()
         self.interval = pd.to_timedelta(self.backend.interval)
         self.interval_seconds = int(self.interval.total_seconds())
 
@@ -26,6 +26,8 @@ class InterimReportGenerator:
         """
         try:
             df = pd.read_csv(self.backend.final_file_path)
+            self.backend.log_info(f"Data loaded from {self.backend.final_file_path}")
+            self.backend.log_info(f"Columns: {self.columns}")
             time_column = self.columns["timestamp"][0]
             df[time_column] = pd.to_datetime(df[time_column])
             df.sort_values(by=time_column, inplace=True)
@@ -198,8 +200,7 @@ class InterimReportGenerator:
         Generates the interim report, including summaries and daily summaries.
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: The summary DataFrame, the original DataFrame,
-            and the daily summary DataFrame.
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: The summary DataFrame, the original DataFrame, and the daily summary DataFrame.
         """
         try:
             self.calculate_values()
@@ -254,7 +255,7 @@ class InterimReportGenerator:
 
         Args:
             summaries_df (pd.DataFrame): The DataFrame containing the summary data.
-            values_df (pd.DataFrame): The original DataFrame containing the value's data.
+            values_df (pd.DataFrame): The original DataFrame containing the values data.
             daily_summary (pd.DataFrame): The DataFrame containing the daily summary data.
             output_dir (str): The directory to save the final report.
         """
