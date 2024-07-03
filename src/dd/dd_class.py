@@ -328,7 +328,7 @@ class Dd:
         try:
             parsed_dates = date_series.apply(Dd.try_parsing_date)
             # Convert Pendulum objects to pandas Timestamp for compatibility
-            return parsed_dates.apply(lambda x: pd.Timestamp(x) if x else pd.NaT)
+            return parsed_dates.apply(lambda x: pd.Timestamp(x).tz_localize(None) if x else pd.NaT)
         except Exception as e:
             logger.error(f"Error parsing dates: {e}")
             return pd.Series([pd.NaT] * len(date_series))
@@ -342,6 +342,8 @@ class Dd:
             if timestamp_column is None:
                 raise ValueError("Timestamp column not found.")
 
+            df[timestamp_column] = pd.to_datetime(df[timestamp_column], format='%Y-%m-%d %H:%M:%S')
+
             full_range = pd.date_range(start=df[timestamp_column].min(), end=df[timestamp_column].max(),
                                        freq=interval, )
             logger.info(f"Full date range generated from {df[timestamp_column].min()} to {df[timestamp_column].max()}.")
@@ -352,6 +354,8 @@ class Dd:
             df.reset_index(inplace=True)
             filled_len = len(df)
             gap_count = filled_len - original_len
+
+            df[timestamp_column] = df[timestamp_column].dt.strftime('%Y-%m-%d %H:%M:%S')
 
             logger.info(f"{gap_count} gaps filled in the self.")
             return df, gap_count
