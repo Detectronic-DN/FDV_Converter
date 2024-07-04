@@ -22,7 +22,9 @@ def map_column_names_to_index(dataframe: pd.DataFrame) -> Dict[str, int]:
     return {col: idx for idx, col in enumerate(dataframe.columns)}
 
 
-def identify_timestamp_column(column_mapping: Dict[str, int]) -> Tuple[Optional[str], Optional[int]]:
+def identify_timestamp_column(
+    column_mapping: Dict[str, int]
+) -> Tuple[Optional[str], Optional[int]]:
     """
     Identifies the index of the timestamp column using the column mapping.
     """
@@ -65,22 +67,34 @@ class Dd:
         for attempt in range(retries):
             try:
                 self.logger.info(f"Attempt {attempt + 1} for authentication")
-                response = requests.get(url=endpoint, auth=DigestAuth(self.username, self.password), timeout=timeout, )
-                self.logger.info(f"Received response with status code {response.status_code}")
+                response = requests.get(
+                    url=endpoint,
+                    auth=DigestAuth(self.username, self.password),
+                    timeout=timeout,
+                )
+                self.logger.info(
+                    f"Received response with status code {response.status_code}"
+                )
 
                 if response.status_code == 200:
                     self.logger.info("Authentication successful")
                     return response.json()
                 elif response.status_code == 403:
-                    self.logger.error("Forbidden: The user does not have the required roles or access.")
+                    self.logger.error(
+                        "Forbidden: The user does not have the required roles or access."
+                    )
                     break
                 elif response.status_code == 404:
-                    self.logger.error("Not Found: The requested logger ID does not exist.")
+                    self.logger.error(
+                        "Not Found: The requested logger ID does not exist."
+                    )
                     break
                 elif response.status_code == 429:
                     retry_after = int(response.headers.get("Retry-After", retry_delay))
                     retry_delay = min(retry_after, max_retry_delay)
-                    self.logger.warning(f"Too Many Requests: Retrying after {retry_delay} seconds.")
+                    self.logger.warning(
+                        f"Too Many Requests: Retrying after {retry_delay} seconds."
+                    )
                     time.sleep(retry_delay)
                     retry_delay = min(retry_delay * 2, max_retry_delay)
                 elif response.status_code == 500:
@@ -91,10 +105,14 @@ class Dd:
                     self.logger.error("Invalid Credentials")
                     break
                 else:
-                    self.logger.error(f"Unexpected HTTP status code received: {response.status_code}")
+                    self.logger.error(
+                        f"Unexpected HTTP status code received: {response.status_code}"
+                    )
                     break
             except RequestException as e:
-                self.logger.exception(f"API Request Exception on attempt {attempt + 1}: {e}")
+                self.logger.exception(
+                    f"API Request Exception on attempt {attempt + 1}: {e}"
+                )
                 time.sleep(retry_delay)
                 retry_delay = min(retry_delay * 2, max_retry_delay)
 
@@ -123,15 +141,22 @@ class Dd:
             self.site_id = site_response.get("SiteID", "")
             self.site_name = site_response.get("SiteName", "")
             self.channel_details_list = [
-                {"channel_number": channel.get("Number", ""), "units": channel.get("Units", ""),
-                 "channel_name": channel.get("Name", ""), } for channel in site_response.get("Channels", [])]
+                {
+                    "channel_number": channel.get("Number", ""),
+                    "units": channel.get("Units", ""),
+                    "channel_name": channel.get("Name", ""),
+                }
+                for channel in site_response.get("Channels", [])
+            ]
             return True
         else:
             self.logger.error("Failed to Retrieve Site Details")
             return False
 
     @staticmethod
-    def convert_to_datetime(epoch_timestamp: int, format_str: str = "%Y-%m-%d %H:%M:%S") -> Optional[str]:
+    def convert_to_datetime(
+        epoch_timestamp: int, format_str: str = "%Y-%m-%d %H:%M:%S"
+    ) -> Optional[str]:
         """
         Converts the given epoch timestamp (in milliseconds) to a formatted datetime string.
         """
@@ -144,7 +169,9 @@ class Dd:
             return None
 
     @staticmethod
-    def convert_to_epoch(date_string: str, date_format: str = "%Y-%m-%d %H:%M:%S") -> Optional[int]:
+    def convert_to_epoch(
+        date_string: str, date_format: str = "%Y-%m-%d %H:%M:%S"
+    ) -> Optional[int]:
         """
         Converts a given date string to its corresponding epoch time.
         """
@@ -155,7 +182,9 @@ class Dd:
             logger.error(f"Error converting date to epoch: {e}")
             return None
 
-    def get_channel_data(self, site_id: str, channel_number: str) -> Optional[Dict[str, Any]]:
+    def get_channel_data(
+        self, site_id: str, channel_number: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Retrieves channel data from the API using the specified site ID and channel number.
 
@@ -179,14 +208,17 @@ class Dd:
                 if channel_data:
                     channel["channel_data"] = channel_data
                 else:
-                    self.logger.error(f"Failed to Retrieve Channel Data for channel number {channel['channel_number']}")
+                    self.logger.error(
+                        f"Failed to Retrieve Channel Data for channel number {channel['channel_number']}"
+                    )
             return True
         else:
             self.logger.error("No site data found")
             return False
 
-    def get_stream_data(self, site_id: str, channel_number: str, start_epoch: int, end_epoch: int
-                        ) -> Optional[Dict[str, Any]]:
+    def get_stream_data(
+        self, site_id: str, channel_number: str, start_epoch: int, end_epoch: int
+    ) -> Optional[Dict[str, Any]]:
         """
         Retrieves stream data from the specified site and channel within a given time range.
 
@@ -196,18 +228,25 @@ class Dd:
         :param end_epoch: The end time in epoch milliseconds.
         :return: The JSON response from the API, or None if the request failed.
         """
-        stream_url = (f"{self.base_url}GetData?{{'streamId':'{site_id}_{channel_number}',"
-                      f"'start': '{start_epoch}','end': '{end_epoch}'}}")
+        stream_url = (
+            f"{self.base_url}GetData?{{'streamId':'{site_id}_{channel_number}',"
+            f"'start': '{start_epoch}','end': '{end_epoch}'}}"
+        )
         return self._handle_authentication(stream_url)
 
     @staticmethod
-    def prepare_stream_data(stream_data: List[Dict[str, Any]]) -> Tuple[List[datetime], List[Union[int, float]]]:
+    def prepare_stream_data(
+        stream_data: Union[Dict[str, Any], List[Dict[str, Any]]]
+    ) -> Tuple[List[datetime], List[Union[int, float]]]:
         """
         Processes the given stream data and extracts timestamps and values.
 
         :param stream_data: The stream data to process.
         :return: A tuple of lists containing datetime objects and corresponding values.
         """
+        if isinstance(stream_data, dict):
+            stream_data = [stream_data]
+
         datetime_values: List[datetime] = []
         values: List[Union[int, float]] = []
         for item in stream_data:
@@ -221,8 +260,12 @@ class Dd:
                 logger.error(f"Unexpected error processing stream data: {e}")
         return datetime_values, values
 
-    def determine_time_range(self, site_data: Dict[str, Any], start_time: Optional[str], end_time: Optional[str]) -> \
-            Tuple[Optional[int], Optional[int]]:
+    def determine_time_range(
+        self,
+        site_data: Dict[str, Any],
+        start_time: Optional[str],
+        end_time: Optional[str],
+    ) -> Tuple[Optional[int], Optional[int]]:
         """
         Determines the start and end time range for data retrieval.
 
@@ -233,11 +276,14 @@ class Dd:
         """
         try:
             if not start_time or not end_time:
-                start_time = datetime(site_data["channel_data"]["year"], site_data["channel_data"]["month"],
-                                      site_data["channel_data"]["day"], site_data["channel_data"]["hour"],
-                                      site_data["channel_data"]["minute"],
-                                      site_data["channel_data"]["second"], ).strftime(
-                    "%Y-%m-%d %H:%M:%S")
+                start_time = datetime(
+                    site_data["channel_data"]["year"],
+                    site_data["channel_data"]["month"],
+                    site_data["channel_data"]["day"],
+                    site_data["channel_data"]["hour"],
+                    site_data["channel_data"]["minute"],
+                    site_data["channel_data"]["second"],
+                ).strftime("%Y-%m-%d %H:%M:%S")
                 start_epoch = self.convert_to_epoch(start_time)
                 end_epoch = site_data["channel_data"]["endDate"]
             else:
@@ -253,11 +299,10 @@ class Dd:
 
     @staticmethod
     def calculate_interval(timestamps: pd.Series) -> Optional[pd.Timedelta]:
-        """Calculate the most common interval between timestamps.
-
+        """
+        Calculate the most common interval between timestamps.
         Args:
             timestamps (pd.Series): A pandas Series of timestamps.
-
         Returns:
             Optional[pd.Timedelta]: The most common interval or None if it cannot be calculated.
         """
@@ -286,8 +331,16 @@ class Dd:
                 return None
 
             result = mode_interval.iloc[0]
-            logger.info(f"Most common interval calculated: {result}")
-            return result
+
+            # Ensure result is a Timedelta object
+            if isinstance(result, pd.Timedelta):
+                logger.info(f"Most common interval calculated: {result}")
+                return result
+            else:
+                logger.warning(
+                    f"Unexpected result type: {type(result)}. Converting to Timedelta."
+                )
+                return pd.Timedelta(result)
 
         except Exception as e:
             logger.error(f"Error calculating interval: {e}")
@@ -318,17 +371,21 @@ class Dd:
     def try_parsing_date(text: str) -> Optional[pendulum.DateTime]:
         """Try to parse a date string using Pendulum's automatic parsing."""
         try:
-            return pendulum.parse(text, strict=False)
+            parsed = pendulum.parse(text, strict=False)
+            return parsed if isinstance(parsed, pendulum.DateTime) else None
         except (ValueError, pendulum.parsing.exceptions.ParserError):
             return None
 
     @staticmethod
     def parse_dates(date_series: pd.Series) -> pd.Series:
         """Parse dates with mixed formats using Pendulum's automatic parsing."""
+
+        def safe_parse(date: str):
+            parsed = Dd.try_parsing_date(date)
+            return pd.Timestamp(parsed) if parsed else pd.NaT
+
         try:
-            parsed_dates = date_series.apply(Dd.try_parsing_date)
-            # Convert Pendulum objects to pandas Timestamp for compatibility
-            return parsed_dates.apply(lambda x: pd.Timestamp(x).tz_localize(None) if x else pd.NaT)
+            return date_series.apply(safe_parse)
         except Exception as e:
             logger.error(f"Error parsing dates: {e}")
             return pd.Series([pd.NaT] * len(date_series))
@@ -342,11 +399,18 @@ class Dd:
             if timestamp_column is None:
                 raise ValueError("Timestamp column not found.")
 
-            df[timestamp_column] = pd.to_datetime(df[timestamp_column], format='%Y-%m-%d %H:%M:%S')
+            df[timestamp_column] = pd.to_datetime(
+                df[timestamp_column], format="%Y-%m-%d %H:%M:%S"
+            )
 
-            full_range = pd.date_range(start=df[timestamp_column].min(), end=df[timestamp_column].max(),
-                                       freq=interval, )
-            logger.info(f"Full date range generated from {df[timestamp_column].min()} to {df[timestamp_column].max()}.")
+            full_range = pd.date_range(
+                start=df[timestamp_column].min(),
+                end=df[timestamp_column].max(),
+                freq=interval,
+            )
+            logger.info(
+                f"Full date range generated from {df[timestamp_column].min()} to {df[timestamp_column].max()}."
+            )
             original_len = len(df)
             df.set_index(timestamp_column, inplace=True)
             df = df.reindex(full_range)
@@ -355,7 +419,7 @@ class Dd:
             filled_len = len(df)
             gap_count = filled_len - original_len
 
-            df[timestamp_column] = df[timestamp_column].dt.strftime('%Y-%m-%d %H:%M:%S')
+            df[timestamp_column] = df[timestamp_column].dt.strftime("%Y-%m-%d %H:%M:%S")
 
             logger.info(f"{gap_count} gaps filled in the self.")
             return df, gap_count
@@ -363,52 +427,59 @@ class Dd:
             logger.error(f"Error filling gaps: {e}")
             return df, 0
 
-    def check_and_fill_csv_file(self, filepath: str) -> tuple[DataFrame | DataFrame, int, str, timedelta] | None:
+    def check_and_fill_csv_file(
+        filepath: str,
+    ) -> tuple[DataFrame | DataFrame, int, str, timedelta] | None:
         """Check if a CSV file exists and fill any gaps based on the most common interval."""
         try:
-            self.logger.info(f"Checking if file exists: {filepath}")
+            logger.info(f"Checking if file exists: {filepath}")
             if not os.path.exists(filepath):
-                self.logger.error("File does not exist.")
+                logger.error("File does not exist.")
                 return None
 
             # Read the file based on extension
-            self.logger.info(f"Reading the file: {filepath}")
+            logger.info(f"Reading the file: {filepath}")
             if filepath.endswith(".csv"):
                 df = pd.read_csv(filepath)
-                self.logger.info("File read as CSV.")
+                logger.info("File read as CSV.")
             elif filepath.endswith(".xlsx"):
                 df = pd.read_excel(filepath)
-                self.logger.info("File read as Excel.")
+                logger.info("File read as Excel.")
             else:
-                self.logger.error("Unsupported file format.")
+                logger.error("Unsupported file format.")
                 return None
 
             # Parse dates in the first column
-            self.logger.info("Parsing dates in the self.")
-            df[df.columns[0]] = self.parse_dates(df[df.columns[0]])
-            self.logger.info("Dates parsed successfully.")
+            logger.info("Parsing dates in the self.")
+            df[df.columns[0]] = Dd.parse_dates(df[df.columns[0]])
+            logger.info("Dates parsed successfully.")
 
             # Ensure timestamps are sorted
-            self.logger.info("Sorting timestamps in the self.")
+            logger.info("Sorting timestamps in the self.")
             df.sort_values(by=df.columns[0], inplace=True)
 
             # Calculate interval and fill gaps
-            interval = self.calculate_interval(df[df.columns[0]])
+            interval = Dd.calculate_interval(df[df.columns[0]])
             if interval is not None:
-                df, gaps_count = self.fill_gaps(df, interval)
-                self.logger.info(f"There are {gaps_count} gaps in the data.")
+                df, gaps_count = Dd.fill_gaps(df, interval)
+                logger.info(f"There are {gaps_count} gaps in the data.")
                 df.to_csv(filepath, index=False)
-                self.logger.info(f"CSV file updated and saved to {filepath}")
+                logger.info(f"CSV file updated and saved to {filepath}")
                 return df, gaps_count, filepath, interval
             else:
-                self.logger.error("Failed to calculate the interval, cannot fill gaps.")
+                logger.error("Failed to calculate the interval, cannot fill gaps.")
                 return None
         except Exception as e:
-            self.logger.error(f"An error occurred while processing the file: {e}")
+            logger.error(f"An error occurred while processing the file: {e}")
             return None
 
-    def download_csv_file(self, site_id: str, filepath: str, start_time: Optional[str] = None,
-                          end_time: Optional[str] = None, ) -> Optional[Tuple]:
+    def download_csv_file(
+        self,
+        site_id: str,
+        filepath: str,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+    ) -> Optional[Tuple]:
         """
         Retrieves and processes stream data from the specified site and channel,
         and saves it to a CSV file if a filepath is provided. It returns detailed information
@@ -425,22 +496,33 @@ class Dd:
                 return None
 
             for channel in self.channel_details_list:
-                start_epoch, end_epoch = self.determine_time_range(channel, start_time, end_time)
+                start_epoch, end_epoch = self.determine_time_range(
+                    channel, start_time, end_time
+                )
                 if start_epoch is None or end_epoch is None:
                     continue
-                stream_data = self.get_stream_data(site_id, channel["channel_number"], start_epoch, end_epoch)
+                stream_data = self.get_stream_data(
+                    site_id, channel["channel_number"], start_epoch, end_epoch
+                )
                 if stream_data:
                     datetime_values, values = self.prepare_stream_data(stream_data)
-                    channel_df = pd.DataFrame({"Timestamp": datetime_values, f"{site_id}_{channel['channel_number']}|"
-                                                                             f"{channel['channel_name'].strip()}|"
-                                                                             f"{channel['units']}": values, })
+                    channel_df = pd.DataFrame(
+                        {
+                            "Timestamp": datetime_values,
+                            f"{site_id}_{channel['channel_number']}|"
+                            f"{channel['channel_name'].strip()}|"
+                            f"{channel['units']}": values,
+                        }
+                    )
                     df = pd.merge(df, channel_df, on="Timestamp", how="outer")
 
             if df.empty:
                 self.logger.error("No stream data retrieved for processing.")
                 return None
 
-            df["Timestamp"] = pd.to_datetime(df["Timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
+            df["Timestamp"] = pd.to_datetime(df["Timestamp"]).dt.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
             df = df.sort_values(by="Timestamp")
             for column in df.columns:
                 if column != "Timestamp":
@@ -455,8 +537,18 @@ class Dd:
                     df, gaps, csv_file_path, interval = result
                     start_time, end_time = df["Timestamp"].min(), df["Timestamp"].max()
                     site_name = self.site_name
-                    self.logger.info(f"CSV file successfully processed and saved: {csv_file_path}")
-                    return site_id, site_name, start_time, end_time, csv_file_path, gaps, interval
+                    self.logger.info(
+                        f"CSV file successfully processed and saved: {csv_file_path}"
+                    )
+                    return (
+                        site_id,
+                        site_name,
+                        start_time,
+                        end_time,
+                        csv_file_path,
+                        gaps,
+                        interval,
+                    )
                 else:
                     self.logger.error("Failed to check and fill the file")
                     return None

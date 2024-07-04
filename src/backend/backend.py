@@ -309,7 +309,7 @@ class Backend(QObject):
             self._final_file_path = filepath
 
             # Check and fill CSV file
-            result = self.dd_instance.check_and_fill_csv_file(self._final_file_path)
+            result = Dd.check_and_fill_csv_file(self._final_file_path)
             if result is None:
                 raise ValueError("Failed to check and fill the CSV file.")
 
