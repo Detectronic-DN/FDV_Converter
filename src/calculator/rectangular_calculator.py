@@ -31,9 +31,6 @@ class RectangularCalculator(Calculator):
         Performs the calculation as defined by the Calculator abstract base class.
         This method calculates the flow value based on depth, velocity, and channel width.
 
-        Args:
-            inputs (List[float]): A list containing two floats: depth value and velocity value.
-
         Returns:
             float: The result of the calculation, or 0.0 if the calculated flow is negative.
 
