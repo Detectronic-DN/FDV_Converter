@@ -220,7 +220,7 @@ class Backend(QObject):
         raise ValueError("Timestamp column not found.")
 
     def get_column_names_and_indices(
-            self, file_name: str, df: pd.DataFrame
+        self, file_name: str, df: pd.DataFrame
     ) -> Dict[str, list]:
         """
         Extract and validate column names and their indices based on the monitor type identified from the file name.
@@ -238,7 +238,7 @@ class Backend(QObject):
             "flow": [],
             "depth": [],
             "velocity": [],
-            "rainfall": []
+            "rainfall": [],
         }
 
         # Define patterns for dynamic column matching
@@ -249,11 +249,20 @@ class Backend(QObject):
 
         # Identify the timestamp column
         timestamp_col = self.identify_timestamp_column(df)
-        column_mapping["timestamp"].append((timestamp_col, df.columns.get_loc(timestamp_col), None, None))
+        column_mapping["timestamp"].append(
+            (timestamp_col, df.columns.get_loc(timestamp_col), None, None)
+        )
 
         def extract_columns(pattern, df_columns):
-            matches = [(pattern.match(col), col, df_columns.get_loc(col)) for col in df_columns if pattern.match(col)]
-            return [(match.string, loc, match.group(1), match.group(2)) for match, col, loc in matches]
+            matches = [
+                (pattern.match(col), col, df_columns.get_loc(col))
+                for col in df_columns
+                if pattern.match(col)
+            ]
+            return [
+                (match.string, loc, match.group(1), match.group(2))
+                for match, col, loc in matches
+            ]
 
         if file_name.startswith("DM"):
             self.monitor_type = "Depth"
@@ -291,7 +300,9 @@ class Backend(QObject):
                 self.site_id = rainfall_cols_info[0][2]
                 self.channel_id = rainfall_cols_info[0][3]
             else:
-                raise ValueError("Required rainfall column not found for Rainfall Gauge Monitor.")
+                raise ValueError(
+                    "Required rainfall column not found for Rainfall Gauge Monitor."
+                )
         else:
             raise ValueError("Unknown monitor type based on file name.")
 
@@ -361,7 +372,8 @@ class Backend(QObject):
                 self.column_map = self.get_column_names_and_indices(file_name, df)
 
                 columns_with_indices = {
-                    key: [(col[0], col[1]) for col in val] for key, val in self.column_map.items()
+                    key: [(col[0], col[1]) for col in val]
+                    for key, val in self.column_map.items()
                 }
 
                 columns_list = []
@@ -438,12 +450,14 @@ class Backend(QObject):
 
             # Apply the timestamp mask
             mask = (df[time_col] >= pd.to_datetime(self.modified_start_timestamp)) & (
-                    df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
+                df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
             )
             modified_df = df.loc[mask]
 
             # Save the modified file with a new name
-            filename, extension = os.path.splitext(os.path.basename(self.final_file_path))
+            filename, extension = os.path.splitext(
+                os.path.basename(self.final_file_path)
+            )
             modified_filepath = os.path.join(
                 os.path.dirname(self.final_file_path), f"{filename}_modified{extension}"
             )
