@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QDialog
 
 from src.FDV.FDV_converter import FDV_conversion
 from src.FDV.FDV_rainfall_converter import perform_R_conversion
-from src.calculator.r3calculator import R3Calculator
+from src.calculator.r3calculator import r3_calculator
 from src.backend.timestamp import TimestampDialog
 from src.Interiem_reports.Interim_Class import InterimReportGenerator
 from src.dd.dd_class import Dd
@@ -360,15 +360,16 @@ class Backend(QObject):
                 file_name = os.path.basename(self.final_file_path)
                 self.column_map = self.get_column_names_and_indices(file_name, df)
 
-                # Create a list of all columns with their indices
                 columns_with_indices = {
-                    key: [(col_info[0], col_info[1]) for col_info in val] for key, val in self.column_map.items() if val
+                    key: [(col[0], col[1]) for col in val] for key, val in self.column_map.items()
                 }
 
-                # Flatten the list for emitting signals
-                all_columns = [col_info[0] for sublist in self.column_map.values() for col_info in sublist]
+                columns_list = []
+                for key, value in self.column_map.items():
+                    for col_info in value:
+                        columns_list.append(col_info[0])
 
-                self.columnsRetrieved.emit(all_columns)
+                self.columnsRetrieved.emit(columns_list)
                 self.log_info(f"Columns retrieved: {columns_with_indices}")
 
             except ValueError as ve:
@@ -430,7 +431,6 @@ class Backend(QObject):
             # Read the CSV file
             df = pd.read_csv(self.final_file_path)
             self.log_info(f"Loaded file from {self.final_file_path}")
-            file_name = os.path.basename(self.final_file_path)
 
             # Convert the timestamp column to datetime
             time_col = self.identify_timestamp_column(df)
@@ -438,14 +438,12 @@ class Backend(QObject):
 
             # Apply the timestamp mask
             mask = (df[time_col] >= pd.to_datetime(self.modified_start_timestamp)) & (
-                df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
+                    df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
             )
             modified_df = df.loc[mask]
 
             # Save the modified file with a new name
-            filename, extension = os.path.splitext(
-                os.path.basename(self.final_file_path)
-            )
+            filename, extension = os.path.splitext(os.path.basename(self.final_file_path))
             modified_filepath = os.path.join(
                 os.path.dirname(self.final_file_path), f"{filename}_modified{extension}"
             )
@@ -602,7 +600,7 @@ class Backend(QObject):
             else:
                 raise ValueError(f"Unknown egg form: {egg_form}")
 
-            r3_value = R3Calculator(width, height, egg_form_value)
+            r3_value = r3_calculator(width, height, egg_form_value)
             return r3_value
         except Exception as e:
             self.log_error(f"Error calculating R3 value: {str(e)}")
