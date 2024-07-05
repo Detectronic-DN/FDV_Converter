@@ -36,6 +36,7 @@ class Backend(QObject):
         Initializes the backend, retrieves stored credentials, and sets up logging.
         """
         super().__init__()
+        self.channel_id = None
         self.modified_end_timestamp = None
         self.modified_start_timestamp = None
         self._final_file_path = None
@@ -219,10 +220,11 @@ class Backend(QObject):
         raise ValueError("Timestamp column not found.")
 
     def get_column_names_and_indices(
-        self, file_name: str, df: pd.DataFrame
-    ) -> Dict[str, Tuple[str, int]]:
+            self, file_name: str, df: pd.DataFrame
+    ) -> Dict[str, list]:
         """
         Extract and validate column names and their indices based on the monitor type identified from the file name.
+        Store site_id and channel_id directly in instance variables.
 
         Args:
             file_name (str): Name of the file to identify the monitor type.
@@ -231,71 +233,71 @@ class Backend(QObject):
         Returns:
             dict: A dictionary with the required columns and their indices.
         """
-        column_mapping = {}
+        column_mapping = {
+            "timestamp": [],
+            "flow": [],
+            "depth": [],
+            "velocity": [],
+            "rainfall": []
+        }
 
         # Define patterns for dynamic column matching
-        depth_pattern = re.compile(r"\d+_\d+\|Depth\|m")
-        flow_pattern = re.compile(r"\d+_\d+\|Flow\|l/s")
-        velocity_pattern = re.compile(r"\d+_\d+\|Velocity\|m/s")
-        rainfall_pattern = re.compile(r"Rainfall")
+        depth_pattern = re.compile(r"(\d+)_(\d+)\|.*Depth\|m")
+        flow_pattern = re.compile(r"(\d+)_(\d+)\|.*Flow\|l/s")
+        velocity_pattern = re.compile(r"(\d+)_(\d+)\|.*Velocity\|m/s")
+        rainfall_pattern = re.compile(r"(\d+)_(\d+)\|.*Rainfall\|mm")
 
         # Identify the timestamp column
         timestamp_col = self.identify_timestamp_column(df)
-        column_mapping["timestamp"] = (timestamp_col, df.columns.get_loc(timestamp_col))
+        column_mapping["timestamp"].append((timestamp_col, df.columns.get_loc(timestamp_col), None, None))
+
+        def extract_columns(pattern, df_columns):
+            matches = [(pattern.match(col), col, df_columns.get_loc(col)) for col in df_columns if pattern.match(col)]
+            return [(match.string, loc, match.group(1), match.group(2)) for match, col, loc in matches]
 
         if file_name.startswith("DM"):
             self.monitor_type = "Depth"
             # Depth Monitor
-            depth_col = next(
-                (col for col in df.columns if depth_pattern.match(col)), None
-            )
-            if depth_col:
-                column_mapping["depth"] = (depth_col, df.columns.get_loc(depth_col))
+            depth_cols_info = extract_columns(depth_pattern, df.columns)
+            if depth_cols_info:
+                column_mapping["depth"] = depth_cols_info
+                self.site_id = depth_cols_info[0][2]
+                self.channel_id = depth_cols_info[0][3]
             else:
                 raise ValueError("Required depth column not found for Depth Monitor.")
         elif file_name.startswith("FM"):
             self.monitor_type = "Flow"
             # Flow Monitor
-            flow_col = next(
-                (col for col in df.columns if flow_pattern.match(col)), None
-            )
-            depth_col = next(
-                (col for col in df.columns if depth_pattern.match(col)), None
-            )
-            velocity_col = next(
-                (col for col in df.columns if velocity_pattern.match(col)), None
-            )
+            flow_cols_info = extract_columns(flow_pattern, df.columns)
+            depth_cols_info = extract_columns(depth_pattern, df.columns)
+            velocity_cols_info = extract_columns(velocity_pattern, df.columns)
 
-            if flow_col and depth_col and velocity_col:
-                column_mapping["flow"] = (flow_col, df.columns.get_loc(flow_col))
-                column_mapping["depth"] = (depth_col, df.columns.get_loc(depth_col))
-                column_mapping["velocity"] = (
-                    velocity_col,
-                    df.columns.get_loc(velocity_col),
-                )
-            else:
+            if flow_cols_info:
+                column_mapping["flow"] = flow_cols_info
+                self.site_id = flow_cols_info[0][2]
+                self.channel_id = flow_cols_info[0][3]
+            if depth_cols_info:
+                column_mapping["depth"] = depth_cols_info
+            if velocity_cols_info:
+                column_mapping["velocity"] = velocity_cols_info
+            if not (flow_cols_info or depth_cols_info or velocity_cols_info):
                 raise ValueError("Required columns not found for Flow Monitor.")
         elif file_name.startswith("RG"):
             self.monitor_type = "Rainfall"
             # Rainfall Gauge Monitor
-            rainfall_col = next(
-                (col for col in df.columns if rainfall_pattern.match(col)), None
-            )
-            if rainfall_col:
-                column_mapping["rainfall"] = (
-                    rainfall_col,
-                    df.columns.get_loc(rainfall_col),
-                )
+            rainfall_cols_info = extract_columns(rainfall_pattern, df.columns)
+            if rainfall_cols_info:
+                column_mapping["rainfall"] = rainfall_cols_info
+                self.site_id = rainfall_cols_info[0][2]
+                self.channel_id = rainfall_cols_info[0][3]
             else:
-                raise ValueError(
-                    "Required rainfall column not found for Rainfall Gauge Monitor."
-                )
+                raise ValueError("Required rainfall column not found for Rainfall Gauge Monitor.")
         else:
             raise ValueError("Unknown monitor type based on file name.")
 
         return column_mapping
 
-    @Slot(str)
+    @Slot()
     def upload_csv_file(self, filepath: str) -> None:
         """
         Upload and process the given CSV file.
@@ -319,24 +321,20 @@ class Backend(QObject):
 
             # Extract site ID and site name from the file name
             file_name = os.path.basename(file_path)
-            site_id = file_name.split(".")[0]
-            site_name = site_id
-
-            self.site_id = site_id
+            site_name = file_name.split(".")[0]
             self.site_name = site_name
             self.interval = interval
 
-            time_col = self.identify_timestamp_column(df)
+            self.column_map = self.get_column_names_and_indices(file_name, df)
 
-            # Process the DataFrame to extract timestamps
+            # Emit signal with site details
+            time_col = self.identify_timestamp_column(df)
             df[time_col] = pd.to_datetime(df[time_col])
             df.sort_values(by=time_col, inplace=True)
             start_timestamp = df[time_col].min().strftime("%Y-%m-%d %H:%M:%S")
             end_timestamp = df[time_col].max().strftime("%Y-%m-%d %H:%M:%S")
-
-            # Emit signal with site details
             self.siteDetailsRetrieved.emit(
-                site_id, site_name, start_timestamp, end_timestamp
+                self.site_id, self.site_name, start_timestamp, end_timestamp
             )
             self.columnsRetrieved.emit(df.columns.tolist())
             self.final_file_path = file_path
@@ -362,13 +360,15 @@ class Backend(QObject):
                 file_name = os.path.basename(self.final_file_path)
                 self.column_map = self.get_column_names_and_indices(file_name, df)
 
+                # Create a list of all columns with their indices
                 columns_with_indices = {
-                    key: (val[0], val[1]) for key, val in self.column_map.items()
+                    key: [(col_info[0], col_info[1]) for col_info in val] for key, val in self.column_map.items() if val
                 }
 
-                self.columnsRetrieved.emit(
-                    [f"{val[0]}" for val in self.column_map.values()]
-                )
+                # Flatten the list for emitting signals
+                all_columns = [col_info[0] for sublist in self.column_map.values() for col_info in sublist]
+
+                self.columnsRetrieved.emit(all_columns)
                 self.log_info(f"Columns retrieved: {columns_with_indices}")
 
             except ValueError as ve:

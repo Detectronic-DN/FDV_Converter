@@ -532,7 +532,7 @@ class Dd:
             csv_file_path = self.save_csv_file(df, sn, filepath)
 
             if csv_file_path:
-                result = self.check_and_fill_csv_file(csv_file_path)
+                result = Dd.check_and_fill_csv_file(csv_file_path)
                 if result:
                     df, gaps, csv_file_path, interval = result
                     start_time, end_time = df["Timestamp"].min(), df["Timestamp"].max()
