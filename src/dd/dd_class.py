@@ -427,6 +427,7 @@ class Dd:
             logger.error(f"Error filling gaps: {e}")
             return df, 0
 
+    @staticmethod
     def check_and_fill_csv_file(
         filepath: str,
     ) -> tuple[DataFrame | DataFrame, int, str, timedelta] | None:
