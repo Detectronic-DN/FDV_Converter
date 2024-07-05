@@ -20,14 +20,6 @@ class WettedAreaCalculationHelper:
     ) -> List[float]:
         """
         Calculates the wetted area and perimeter of the egg-shaped channel based on the given dimensions and depth.
-
-        Args:
-            height (float): The height of the channel.
-            radius1, radius2, radius3 (float): The radii defining the egg shape.
-            h1, h2 (float): Heights at different sections of the egg shape.
-            offset (float): The horizontal offset in the egg shape.
-            depth_of_water (float): The depth of water in the channel.
-
         Returns:
             List[float]: A list containing the calculated wetted area and perimeter.
         """
@@ -87,4 +79,4 @@ class WettedAreaCalculationHelper:
             perimeter6 = 2.0 * radius1 * math.acos((radius1 - h1) / radius1)
             perimeter = perimeter6 + perimeter5 + perimeter4
 
-        return wetted_area, perimeter
+        return [wetted_area, perimeter]
