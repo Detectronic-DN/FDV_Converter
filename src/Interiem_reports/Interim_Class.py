@@ -133,7 +133,6 @@ class InterimReportGenerator:
         Returns:
             pd.DataFrame: The DataFrame containing daily summaries.
         """
-        global daily_summary
         try:
             time_column = self.columns["timestamp"][0]
 
@@ -168,7 +167,6 @@ class InterimReportGenerator:
         try:
             self.calculate_values()
             summaries_df = self.generate_summaries()
-            daily_summary = self.calculate_daily_summary()
 
             # Add Grand Total row
             grand_total_row = {"Interim Period": "Grand Total", "Date Range": ""}

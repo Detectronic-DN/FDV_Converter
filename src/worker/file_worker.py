@@ -18,7 +18,7 @@ class UploadWorker(QObject):
     def perform_upload_csv_file(self, filepath):
         self.busyChanged.emit(True)
         try:
-            self._connect_signals()
+            self.connect_signals()
             self.backend.upload_csv_file(filepath)
         finally:
             self.busyChanged.emit(False)
@@ -30,7 +30,7 @@ class UploadWorker(QObject):
             self.backend.errorOccurred.connect(self.errorOccurred.emit)
             self._connections_made = True
 
-    def _connect_signals(self):
+    def connect_signals(self):
         if not self._connections_made:
             self.backend.logMessage.connect(self.logMessage.emit)
             self.backend.siteDetailsRetrieved.connect(self.siteDetailsRetrieved.emit)
