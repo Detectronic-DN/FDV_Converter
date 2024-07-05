@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
         self.setWindowTitle("FDV App")
-        self.setGeometry(100, 100, 540, 480)
+        self.setGeometry(100, 100, 640, 480)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
         self.site_details_page.continue_to_next.connect(self.show_fdv_page)
 
         # Apply the light theme stylesheet
-        self.apply_stylesheet('./light_theme_stylesheet.qss')
+        self.apply_stylesheet("./light_theme_stylesheet.qss")
         self.show()
 
     def apply_stylesheet(self, stylesheet_path):
