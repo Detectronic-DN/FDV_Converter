@@ -1,28 +1,17 @@
-import pandas as pd
-from src.calculator.egg_type_1_calculator import Egg1Calculator
-from src.calculator.egg_type_2a_calculator import Egg2ACalculator
-from src.calculator.egg_type_2_calculator import Egg2Calculator
-from src.calculator.circular_calculator import CircularCalculator
-from src.calculator.rectangular_calculator import RectangularCalculator
-from src.calculator.circle_and_rectangle import TwoCircleAndRectangleCalculator
 from src.FDV.FDV_flow_creator import FDVFlowCreator
+from src.calculator.circle_and_rectangle import TwoCircleAndRectangleCalculator
+from src.calculator.circular_calculator import CircularCalculator
+from src.calculator.egg_type_1_calculator import Egg1Calculator
+from src.calculator.egg_type_2_calculator import Egg2Calculator
+from src.calculator.egg_type_2a_calculator import Egg2ACalculator
+from src.calculator.rectangular_calculator import RectangularCalculator
 
 
-def FDV_conversion(
-    csv_file_name,
-    output_file_name,
-    site_name,
-    start_date,
-    end_date,
-    interval,
-    pipe_type,
-    pipe_size_param,
-    depth_column,
-    velocity_column,
-):
+def fdv_conversion(csv_file_name, output_file_name, site_name, start_date, end_date, interval, pipe_type,
+                   pipe_size_param, depth_column, velocity_column, ):
     flow_creator = FDVFlowCreator()
 
-    flow_creator.set_pipe_size(-1.0) 
+    flow_creator.set_pipe_size(-1.0)
 
     if pipe_type == "Circular":
         pipe_size = float(pipe_size_param) / 1000.0

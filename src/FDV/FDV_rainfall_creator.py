@@ -4,6 +4,8 @@ import pandas as pd
 
 class FDVRainfallCreator:
     def __init__(self) -> None:
+        self.output_file = None
+        self.csv_file = None
         self.header_lines = [
             "**DATA_FORMAT:           1,ASCII",
             "**IDENTIFIER:            1,SHUTTE",
@@ -119,8 +121,8 @@ class FDVRainfallCreator:
         if len(self.output_buffer) >= 10:
             self.drain_output_buffer(self.drain_size)
 
-    def drain_output_buffer(self, drainSize):
-        while len(self.output_buffer) > drainSize:
+    def drain_output_buffer(self, drain_size):
+        while len(self.output_buffer) > drain_size:
             sample = self.output_buffer.pop(0)
             self.output_file.write(f"{sample:15.1f}")
             if self.value_count % 5 == 0:

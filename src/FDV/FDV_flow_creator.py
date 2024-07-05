@@ -5,6 +5,7 @@ import pandas as pd
 
 class FDVFlowCreator:
     def __init__(self):
+        self.csv_file = None
         self.calculator = None
         self.header_lines = [
             "**DATA_FORMAT:           1,ASCII",

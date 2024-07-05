@@ -63,9 +63,7 @@ class InterimReportGenerator:
             self.backend.log_error(f"Error in calculate_values: {e}")
             raise
 
-    def generate_summaries(
-        self, start_date: Optional[str] = None, end_date: Optional[str] = None
-    ) -> pd.DataFrame:
+    def generate_summaries(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> pd.DataFrame:
         """
         Generates weekly summaries for the data.
 
@@ -92,49 +90,29 @@ class InterimReportGenerator:
 
             weekly_summaries = []
             while start_date <= end_date:
-                week_end = start_date + timedelta(
-                    days=6, hours=23, minutes=59, seconds=59
-                )
-                weekly_data = self.df[
-                    (self.df[time_column] >= start_date)
-                    & (self.df[time_column] <= week_end)
-                ]
+                week_end = start_date + timedelta(days=6, hours=23, minutes=59, seconds=59)
+                weekly_data = self.df[(self.df[time_column] >= start_date) & (self.df[time_column] <= week_end)]
 
                 if not weekly_data.empty:
-                    summary = {
-                        "Start Date": start_date,
-                        "End Date": week_end,
-                    }
+                    summary = {"Start Date": start_date, "End Date": week_end, }
                     if self.monitor_type == "Flow":
                         flow_column = self.columns["flow"][0]
                         summary.update(
-                            {
-                                "Total Flow(m3)": weekly_data["m3"].sum(),
-                                "Max Flow(l/s)": weekly_data[flow_column].max(),
-                                "Min Flow(l/s)": weekly_data[flow_column].min(),
-                            }
-                        )
+                            {"Total Flow(m3)": weekly_data["m3"].sum(), "Max Flow(l/s)": weekly_data[flow_column].max(),
+                             "Min Flow(l/s)": weekly_data[flow_column].min(), })
                     elif self.monitor_type == "Depth":
                         depth_column = self.columns["depth"][0]
-                        summary.update(
-                            {
-                                "Average Level(m)": weekly_data[depth_column].mean(),
-                                "Max Level(m)": weekly_data[depth_column].max(),
-                                "Min Level(m)": weekly_data[depth_column].min(),
-                            }
-                        )
+                        summary.update({"Average Level(m)": weekly_data[depth_column].mean(),
+                                        "Max Level(m)": weekly_data[depth_column].max(),
+                                        "Min Level(m)": weekly_data[depth_column].min(), })
                     weekly_summaries.append(summary)
                 start_date = week_end + timedelta(seconds=1)
 
             summary_df = pd.DataFrame(weekly_summaries)
             summary_df["Start Date"] = summary_df["Start Date"].dt.strftime("%d/%m/%Y")
             summary_df["End Date"] = summary_df["End Date"].dt.strftime("%d/%m/%Y")
-            summary_df["Date Range"] = (
-                summary_df["Start Date"] + " - " + summary_df["End Date"]
-            )
-            summary_df["Interim Period"] = summary_df.index.map(
-                lambda x: f"Interim {x + 1}"
-            )
+            summary_df["Date Range"] = (summary_df["Start Date"] + " - " + summary_df["End Date"])
+            summary_df["Interim Period"] = summary_df.index.map(lambda x: f"Interim {x + 1}")
 
             columns = ["Interim Period", "Date Range"]
             if self.monitor_type == "Flow":
@@ -155,36 +133,20 @@ class InterimReportGenerator:
         Returns:
             pd.DataFrame: The DataFrame containing daily summaries.
         """
+        global daily_summary
         try:
             time_column = self.columns["timestamp"][0]
 
             if self.monitor_type == "Flow":
                 flow_column = self.columns["flow"][0]
-                daily_summary = (
-                    self.df.groupby(pd.Grouper(key=time_column, freq="D"))
-                    .agg({flow_column: ["mean", "max", "min"], "m3": "sum"})
-                    .reset_index()
-                )
-                daily_summary.columns = [
-                    "Date",
-                    "Average Flow(l/s)",
-                    "Max Flow(l/s)",
-                    "Min Flow(l/s)",
-                    "Flow (m3)",
-                ]
+                daily_summary = (self.df.groupby(pd.Grouper(key=time_column, freq="D")).agg(
+                    {flow_column: ["mean", "max", "min"], "m3": "sum"}).reset_index())
+                daily_summary.columns = ["Date", "Average Flow(l/s)", "Max Flow(l/s)", "Min Flow(l/s)", "Flow (m3)", ]
             elif self.monitor_type == "Depth":
                 depth_column = self.columns["depth"][0]
-                daily_summary = (
-                    self.df.groupby(pd.Grouper(key=time_column, freq="D"))
-                    .agg({depth_column: ["mean", "max", "min"]})
-                    .reset_index()
-                )
-                daily_summary.columns = [
-                    "Date",
-                    "Average Level(m)",
-                    "Max Level(m)",
-                    "Min Level(m)",
-                ]
+                daily_summary = (self.df.groupby(pd.Grouper(key=time_column, freq="D")).agg(
+                    {depth_column: ["mean", "max", "min"]}).reset_index())
+                daily_summary.columns = ["Date", "Average Level(m)", "Max Level(m)", "Min Level(m)", ]
 
             daily_summary["Date"] = daily_summary["Date"].dt.strftime("%d/%m/%Y")
             return daily_summary
@@ -200,7 +162,8 @@ class InterimReportGenerator:
         Generates the interim report, including summaries and daily summaries.
 
         Returns:
-            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: The summary DataFrame, the original DataFrame, and the daily summary DataFrame.
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: The summary DataFrame, the original DataFrame,
+            and the daily summary DataFrame.
         """
         try:
             self.calculate_values()
@@ -210,52 +173,33 @@ class InterimReportGenerator:
             # Add Grand Total row
             grand_total_row = {"Interim Period": "Grand Total", "Date Range": ""}
             if self.monitor_type == "Flow":
-                grand_total_row.update(
-                    {
-                        "Total Flow(m3)": summaries_df["Total Flow(m3)"].sum(),
-                        "Max Flow(l/s)": summaries_df["Max Flow(l/s)"].max(),
-                        "Min Flow(l/s)": summaries_df["Min Flow(l/s)"].min(),
-                    }
-                )
+                grand_total_row.update({"Total Flow(m3)": summaries_df["Total Flow(m3)"].sum(),
+                                        "Max Flow(l/s)": summaries_df["Max Flow(l/s)"].max(),
+                                        "Min Flow(l/s)": summaries_df["Min Flow(l/s)"].min(), })
             elif self.monitor_type == "Depth":
-                grand_total_row.update(
-                    {
-                        "Average Level(m)": summaries_df["Average Level(m)"].mean(),
-                        "Max Level(m)": summaries_df["Max Level(m)"].max(),
-                        "Min Level(m)": summaries_df["Min Level(m)"].min(),
-                    }
-                )
+                grand_total_row.update({"Average Level(m)": summaries_df["Average Level(m)"].mean(),
+                                        "Max Level(m)": summaries_df["Max Level(m)"].max(),
+                                        "Min Level(m)": summaries_df["Min Level(m)"].min(), })
             elif self.monitor_type == "Rainfall":
-                grand_total_row.update(
-                    {
-                        "Total Rainfall": summaries_df["Total Rainfall"].sum(),
-                        "Max Rainfall": summaries_df["Max Rainfall"].max(),
-                        "Min Rainfall": summaries_df["Min Rainfall"].min(),
-                    }
-                )
+                grand_total_row.update({"Total Rainfall": summaries_df["Total Rainfall"].sum(),
+                                        "Max Rainfall": summaries_df["Max Rainfall"].max(),
+                                        "Min Rainfall": summaries_df["Min Rainfall"].min(), })
 
-            summaries_df = pd.concat(
-                [summaries_df, pd.DataFrame([grand_total_row])], ignore_index=True
-            )
+            summaries_df = pd.concat([summaries_df, pd.DataFrame([grand_total_row])], ignore_index=True)
 
             return summaries_df, self.df, daily_summary
         except Exception as e:
             self.backend.log_error(f"Error generating report: {e}")
             raise
 
-    def save_final_report(
-        self,
-        summaries_df: pd.DataFrame,
-        values_df: pd.DataFrame,
-        daily_summary: pd.DataFrame,
-        output_dir: str,
-    ) -> None:
+    def save_final_report(self, summaries_df: pd.DataFrame, values_df: pd.DataFrame, daily_summary: pd.DataFrame,
+                          output_dir: str, ) -> None:
         """
         Saves the final report to a single Excel file with three sheets: Values, Summary, and Daily.
 
         Args:
             summaries_df (pd.DataFrame): The DataFrame containing the summary data.
-            values_df (pd.DataFrame): The original DataFrame containing the values data.
+            values_df (pd.DataFrame): The original DataFrame containing the values' data.
             daily_summary (pd.DataFrame): The DataFrame containing the daily summary data.
             output_dir (str): The directory to save the final report.
         """
@@ -263,10 +207,9 @@ class InterimReportGenerator:
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-            output_file = os.path.join(
-                output_dir,
-                f"{os.path.basename(self.backend.final_file_path).split('.')[0]}_final_report.xlsx",
-            )
+            output_file = os.path.join(output_dir,
+                                       f"{os.path.basename(self.backend.final_file_path).split('.')[0]}_final_report"
+                                       f".xlsx", )
             with pd.ExcelWriter(output_file) as writer:
                 values_df.to_excel(writer, sheet_name="Values", index=False)
                 summaries_df.to_excel(writer, sheet_name="Summary", index=False)
