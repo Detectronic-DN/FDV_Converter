@@ -7,8 +7,8 @@ import pandas as pd
 from PySide6.QtCore import QObject, Signal, Slot, QSettings
 from PySide6.QtWidgets import QDialog
 
-from src.FDV.FDV_converter import FDV_conversion
-from src.FDV.FDV_rainfall_converter import perform_R_conversion
+from src.FDV.FDV_converter import fdv_conversion
+from src.FDV.FDV_rainfall_converter import perform_r_conversion
 from src.calculator.r3calculator import r3_calculator
 from src.backend.timestamp import TimestampDialog
 from src.Interiem_reports.Interim_Class import InterimReportGenerator
@@ -514,7 +514,7 @@ class Backend(QObject):
             os.makedirs(output_dir, exist_ok=True)
             output_file_name = os.path.join(output_dir, f"{site_name}.fdv")
 
-            null_readings = FDV_conversion(
+            null_readings = fdv_conversion(
                 csv_file_name,
                 output_file_name,
                 site_name,
@@ -570,7 +570,7 @@ class Backend(QObject):
             output_file_name = os.path.join(output_dir, f"{site_name}.r")
 
             try:
-                null_readings = perform_R_conversion(
+                null_readings = perform_r_conversion(
                     csv_file_name,
                     output_file_name,
                     site_name,
