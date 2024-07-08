@@ -285,7 +285,7 @@ class Dd:
                     site_data["channel_data"]["second"],
                 ).strftime("%Y-%m-%d %H:%M:%S")
                 start_epoch = self.convert_to_epoch(start_time)
-                end_epoch = site_data["channel_data"]["end_date"]
+                end_epoch = site_data["channel_data"]["endDate"]
             else:
                 start_epoch = self.convert_to_epoch(start_time)
                 end_epoch = self.convert_to_epoch(end_time)
