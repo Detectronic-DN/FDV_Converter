@@ -1,4 +1,4 @@
-from PySide6.QtCore import QPropertyAnimation, QEasingCurve, Property,Qt
+from PySide6.QtCore import QPropertyAnimation, QEasingCurve, Property, Qt
 from PySide6.QtGui import QPainter, QColor, QLinearGradient
 from PySide6.QtWidgets import QPushButton, QGraphicsOpacityEffect
 
@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QPushButton, QGraphicsOpacityEffect
 class ModernButton(QPushButton):
     def __init__(self, text, color_start, color_end, parent=None):
         super().__init__(text, parent)
-        self.setFixedSize(100, 35)
+        self.setFixedSize(150, 40)  # Increased size for better visibility
         self._opacity = 0
         self.color_start = color_start
         self.color_end = color_end
@@ -27,8 +27,24 @@ class ModernButton(QPushButton):
         gradient.setColorAt(0.2, QColor(self.color_start))
         gradient.setColorAt(1, QColor(self.color_end))
         painter.setBrush(gradient)
-        painter.setPen(QColor(self.color_start))
-        painter.drawRoundedRect(self.rect(), 5, 5)
+        painter.setPen(Qt.PenStyle.NoPen)  # Remove the border
+
+        # Default radius if not specified in stylesheet
+        radius = 10
+
+        # Try to get the border-radius from the stylesheet
+        style = self.styleSheet()
+        if "border-radius:" in style:
+            try:
+                radius_str = style.split("border-radius:")[1].split(";")[0].strip()
+                if radius_str.endswith("px"):
+                    radius = int(radius_str[:-2])
+                else:
+                    radius = int(radius_str)
+            except (IndexError, ValueError):
+                pass  # Use default radius if parsing fails
+
+        painter.drawRoundedRect(self.rect(), radius, radius)
 
         painter.setPen(QColor("#ffffff"))
         painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.text())

@@ -1,9 +1,9 @@
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QCheckBox,
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, QHBoxLayout, QCheckBox,
                                QSpacerItem, QSizePolicy, QFrame, )
 
-from src.logger.logger import Logger
 from src.UI.stylesheet.login_page import ModernButton
+from src.logger.logger import Logger
 
 
 def validate_credentials(username: str, password: str) -> str:
@@ -67,16 +67,20 @@ class LoginPage(QWidget):
         # Create the frame for the login form without visible borders
 
         self.login_frame.setFrameShape(QFrame.Shape.NoFrame)
-        self.login_frame.setFixedSize(400, 200)
+        self.login_frame.setFixedSize(450, 300)
 
         form_layout = QVBoxLayout(self.login_frame)
+        form_layout.setSpacing(15)
 
         # Username
-        title_label = QLabel("DD+ Login")
+        title_label = QLabel("DD-EN Login")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
         form_layout.addWidget(title_label)
+
         username_label = QLabel("Enter Username:")
         self.username_input.setPlaceholderText("Username")
+        self.username_input.setFixedHeight(40)
         self.username_input.textChanged.connect(self.clear_error)
         form_layout.addWidget(username_label)
         form_layout.addWidget(self.username_input)
@@ -84,6 +88,7 @@ class LoginPage(QWidget):
         # Password
         password_label = QLabel("Enter Password:")
         self.password_input.setPlaceholderText("Password")
+        self.password_input.setFixedHeight(40)
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.textChanged.connect(self.clear_error)
         form_layout.addWidget(password_label)
@@ -104,11 +109,14 @@ class LoginPage(QWidget):
         buttons_layout = QHBoxLayout()
         skip_button = ModernButton("SKIP", "#8be3fc", "#576bff")
         skip_button.setObjectName("skipButton")
+        skip_button.setStyleSheet("border-radius: 20px;")
         next_button = ModernButton("NEXT", "#c41b54", "#7c072e")
         next_button.setObjectName("nextButton")
+        next_button.setStyleSheet("border-radius: 20px;")
 
         buttons_layout.addWidget(skip_button)
         buttons_layout.addWidget(next_button)
+        buttons_layout.setSpacing(20)
 
         form_layout.addLayout(buttons_layout)
 
@@ -123,6 +131,7 @@ class LoginPage(QWidget):
         # Connections
         skip_button.clicked.connect(self.skip)
         next_button.clicked.connect(self.next)
+        self.apply_styles()
 
     def connect_signals(self) -> None:
         """
@@ -214,3 +223,43 @@ class LoginPage(QWidget):
         """
         self.error_label.setText(message)
         self.error_label.setVisible(True)
+
+    def apply_styles(self):
+        self.setStyleSheet("""
+            QLineEdit {
+                background-color: #f5f5f5;
+                border: 1px solid #dddddd;
+                border-radius: 5px;
+                padding: 5px;
+            }
+
+            QCheckBox {
+                spacing: 5px;
+            }
+            QCheckBox::indicator {
+              width: 15px;
+              height: 15px;
+            }
+
+            QCheckBox::indicator:unchecked {
+              image: url(icons/unchecked.png);
+            }
+            QCheckBox::indicator:checked {
+              image: url(icons/checkbox.png);
+            }
+
+            #errorLabel {
+                color: #ff0000;
+                margin-bottom: 10px;
+            }
+
+            #skipButton, #nextButton {
+                color: white;
+                padding: 14px 40px 13px;
+                border-radius: 20px;  # This will be used by ModernButton
+                font-weight: bold;
+                font-size: 12px;
+                letter-spacing: 3px;
+                text-transform: uppercase;
+            }
+        """)
