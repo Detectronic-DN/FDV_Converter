@@ -88,10 +88,9 @@ class SiteDetailsPage(QWidget):
         site_id_layout.addWidget(site_id_label)
         site_id_layout.addWidget(self.site_id_input)
         layout.addLayout(site_id_layout)
-
         get_details_button = QPushButton("Get Site Details")
         get_details_button.clicked.connect(self.get_site_details)
-        layout.addWidget(get_details_button, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(get_details_button)
 
         # File Upload Section
         file_upload_layout = QHBoxLayout()
