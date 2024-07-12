@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, QPushBut
                                QSpacerItem, QSizePolicy, QFrame, )
 
 from src.logger.logger import Logger
+from src.UI.stylesheet.login_page import ModernButton
 
 
 def validate_credentials(username: str, password: str) -> str:
@@ -101,8 +102,10 @@ class LoginPage(QWidget):
 
         # Buttons for further actions
         buttons_layout = QHBoxLayout()
-        skip_button = QPushButton("Skip")
-        next_button = QPushButton("Next")
+        skip_button = ModernButton("SKIP", "#8be3fc", "#576bff")
+        skip_button.setObjectName("skipButton")
+        next_button = ModernButton("NEXT", "#c41b54", "#7c072e")
+        next_button.setObjectName("nextButton")
 
         buttons_layout.addWidget(skip_button)
         buttons_layout.addWidget(next_button)
