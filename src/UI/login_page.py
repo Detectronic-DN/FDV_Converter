@@ -260,7 +260,7 @@ class LoginPage(QWidget):
             #skipButton, #nextButton {
                 color: white;
                 padding: 14px 40px 13px;
-                border-radius: 20px;  # This will be used by ModernButton
+                border-radius: 20px; 
                 font-weight: bold;
                 font-size: 12px;
                 letter-spacing: 3px;
