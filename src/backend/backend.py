@@ -384,7 +384,7 @@ class Backend(QObject):
             site_name = file_name.split(".")[0]
 
             # Split the file name by common separators
-            name_parts = re.split(r'[-_\s]', site_name)
+            name_parts = re.split(r"[-_\s]", site_name)
 
             # Try to identify site ID and name
             self.site_id = None
@@ -397,9 +397,9 @@ class Backend(QObject):
 
             if self.site_id:
                 # If we found a site ID, everything after it is potentially the site name
-                site_name_parts = name_parts[name_parts.index(self.site_id) + 1:]
+                site_name_parts = name_parts[name_parts.index(self.site_id) + 1 :]
                 if site_name_parts:
-                    self.site_name = ' '.join(site_name_parts)
+                    self.site_name = " ".join(site_name_parts)
             else:
                 # If we didn't find a numeric site ID, use the whole name as site name
                 self.site_name = site_name
@@ -439,12 +439,23 @@ class Backend(QObject):
                 file_name = os.path.basename(self.final_file_path)
                 self.column_map = self.get_column_names_and_indices(file_name, df)
 
+                # Create a simplified version for logging
                 simplified_column_map = {}
                 for key, value in self.column_map.items():
-                    if value:
-                        simplified_column_map[key] = value[0][0]
+                    if value:  # Only include non-empty lists
+                        simplified_column_map[key] = [
+                            col[0] for col in value
+                        ]  # Include all column names for each type
 
-                self.columnsRetrieved.emit(list(simplified_column_map.values()))
+                # Keep the original column_map structure for the application
+                columns_list = []
+                for key, value in self.column_map.items():
+                    for col_info in value:
+                        columns_list.append(col_info[0])
+
+                self.columnsRetrieved.emit(columns_list)
+
+                # Log the simplified version
                 self.log_info(f"Columns retrieved: {simplified_column_map}")
 
             except ValueError as ve:

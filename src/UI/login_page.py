@@ -71,8 +71,9 @@ class LoginPage(QWidget):
         form_layout = QVBoxLayout(self.login_frame)
 
         # Username
-        title_label = QLabel("DD+ Login")
+        title_label = QLabel("DD-EN Login")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
         form_layout.addWidget(title_label)
         username_label = QLabel("Enter Username:")
         self.username_input.setPlaceholderText("Username")
