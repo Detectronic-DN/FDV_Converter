@@ -27,9 +27,8 @@ class InterimReportGenerator:
         try:
             df = pd.read_csv(self.backend.final_file_path)
             self.backend.log_info(f"Data loaded from {self.backend.final_file_path}")
-            time_column = self.columns["timestamp"][0][0] if self.columns["timestamp"] else None
-            if not time_column:
-                raise ValueError("Timestamp column not found")
+            self.backend.log_info(f"Columns: {self.columns}")
+            time_column = self.columns["timestamp"][0]
             df[time_column] = pd.to_datetime(df[time_column])
             df.sort_values(by=time_column, inplace=True)
             df.reset_index(drop=True, inplace=True)
@@ -47,10 +46,9 @@ class InterimReportGenerator:
         """
         try:
             if self.monitor_type == "Flow":
-                flow_column = self.columns["flow"][0][0] if self.columns["flow"] else None
-                if flow_column:
-                    self.df["L"] = self.df[flow_column] * self.interval_seconds
-                    self.df["m3"] = self.df["L"] / 1000
+                flow_column = self.columns["flow"][0]
+                self.df["L"] = self.df[flow_column] * self.interval_seconds
+                self.df["m3"] = self.df["L"] / 1000
             elif self.monitor_type == "Depth":
                 # Add depth specific calculations if needed
                 pass
@@ -77,9 +75,7 @@ class InterimReportGenerator:
             pd.DataFrame: The DataFrame containing weekly summaries.
         """
         try:
-            time_column = self.columns["timestamp"][0][0] if self.columns["timestamp"] else None
-            if not time_column:
-                raise ValueError("Timestamp column not found")
+            time_column = self.columns["timestamp"][0]
 
             if start_date is None:
                 start_date = self.df[time_column].min().normalize()
@@ -100,21 +96,15 @@ class InterimReportGenerator:
                 if not weekly_data.empty:
                     summary = {"Start Date": start_date, "End Date": week_end, }
                     if self.monitor_type == "Flow":
-                        flow_column = self.columns["flow"][0][0] if self.columns["flow"] else None
-                        if flow_column:
-                            summary.update({
-                                "Total Flow(m3)": weekly_data["m3"].sum(),
-                                "Max Flow(l/s)": weekly_data[flow_column].max(),
-                                "Min Flow(l/s)": weekly_data[flow_column].min(),
-                            })
+                        flow_column = self.columns["flow"][0]
+                        summary.update(
+                            {"Total Flow(m3)": weekly_data["m3"].sum(), "Max Flow(l/s)": weekly_data[flow_column].max(),
+                             "Min Flow(l/s)": weekly_data[flow_column].min(), })
                     elif self.monitor_type == "Depth":
-                        depth_column = self.columns["depth"][0][0] if self.columns["depth"] else None
-                        if depth_column:
-                            summary.update({
-                                "Average Level(m)": weekly_data[depth_column].mean(),
-                                "Max Level(m)": weekly_data[depth_column].max(),
-                                "Min Level(m)": weekly_data[depth_column].min(),
-                            })
+                        depth_column = self.columns["depth"][0]
+                        summary.update({"Average Level(m)": weekly_data[depth_column].mean(),
+                                        "Max Level(m)": weekly_data[depth_column].max(),
+                                        "Min Level(m)": weekly_data[depth_column].min(), })
                     weekly_summaries.append(summary)
                 start_date = week_end + timedelta(seconds=1)
 
@@ -144,23 +134,18 @@ class InterimReportGenerator:
             pd.DataFrame: The DataFrame containing daily summaries.
         """
         try:
-            time_column = self.columns["timestamp"][0][0] if self.columns["timestamp"] else None
-            if not time_column:
-                raise ValueError("Timestamp column not found")
+            time_column = self.columns["timestamp"][0]
 
             if self.monitor_type == "Flow":
-                flow_column = self.columns["flow"][0][0] if self.columns["flow"] else None
-                if flow_column:
-                    daily_summary = (self.df.groupby(pd.Grouper(key=time_column, freq="D")).agg(
-                        {flow_column: ["mean", "max", "min"], "m3": "sum"}).reset_index())
-                    daily_summary.columns = ["Date", "Average Flow(l/s)", "Max Flow(l/s)", "Min Flow(l/s)",
-                                             "Flow (m3)", ]
+                flow_column = self.columns["flow"][0]
+                daily_summary = (self.df.groupby(pd.Grouper(key=time_column, freq="D")).agg(
+                    {flow_column: ["mean", "max", "min"], "m3": "sum"}).reset_index())
+                daily_summary.columns = ["Date", "Average Flow(l/s)", "Max Flow(l/s)", "Min Flow(l/s)", "Flow (m3)", ]
             elif self.monitor_type == "Depth":
-                depth_column = self.columns["depth"][0][0] if self.columns["depth"] else None
-                if depth_column:
-                    daily_summary = (self.df.groupby(pd.Grouper(key=time_column, freq="D")).agg(
-                        {depth_column: ["mean", "max", "min"]}).reset_index())
-                    daily_summary.columns = ["Date", "Average Level(m)", "Max Level(m)", "Min Level(m)", ]
+                depth_column = self.columns["depth"][0]
+                daily_summary = (self.df.groupby(pd.Grouper(key=time_column, freq="D")).agg(
+                    {depth_column: ["mean", "max", "min"]}).reset_index())
+                daily_summary.columns = ["Date", "Average Level(m)", "Max Level(m)", "Min Level(m)", ]
 
             daily_summary["Date"] = daily_summary["Date"].dt.strftime("%d/%m/%Y")
             return daily_summary
@@ -182,7 +167,6 @@ class InterimReportGenerator:
         try:
             self.calculate_values()
             summaries_df = self.generate_summaries()
-            daily_summary = self.calculate_daily_summary()
 
             # Add Grand Total row
             grand_total_row = {"Interim Period": "Grand Total", "Date Range": ""}
