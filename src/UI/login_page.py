@@ -79,6 +79,7 @@ class LoginPage(QWidget):
         form_layout.addWidget(title_label)
 
         username_label = QLabel("Enter Username:")
+        username_label.setStyleSheet("font-size: 14px;")
         self.username_input.setPlaceholderText("Username")
         self.username_input.setFixedHeight(40)
         self.username_input.textChanged.connect(self.clear_error)
@@ -87,6 +88,7 @@ class LoginPage(QWidget):
 
         # Password
         password_label = QLabel("Enter Password:")
+        password_label.setStyleSheet("font-size: 14px;")
         self.password_input.setPlaceholderText("Password")
         self.password_input.setFixedHeight(40)
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
@@ -231,10 +233,12 @@ class LoginPage(QWidget):
                 border: 1px solid #dddddd;
                 border-radius: 5px;
                 padding: 5px;
+                font-size: 14px;
             }
 
             QCheckBox {
                 spacing: 5px;
+                font-size: 14px;
             }
             QCheckBox::indicator {
               width: 15px;
