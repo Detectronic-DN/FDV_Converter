@@ -1,6 +1,16 @@
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QCheckBox,
-                               QSpacerItem, QSizePolicy, QFrame, )
+from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QHBoxLayout,
+    QCheckBox,
+    QSpacerItem,
+    QSizePolicy,
+    QFrame,
+)
 
 from src.logger.logger import Logger
 
@@ -55,10 +65,15 @@ class LoginPage(QWidget):
         """
         self.setWindowTitle("Login")
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Create a spacer item for top and bottom
-        top_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-        bottom_spacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        top_spacer = QSpacerItem(
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+        bottom_spacer = QSpacerItem(
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
 
         # Add top spacer to the layout
         layout.addItem(top_spacer)
@@ -66,36 +81,84 @@ class LoginPage(QWidget):
         # Create the frame for the login form without visible borders
 
         self.login_frame.setFrameShape(QFrame.Shape.NoFrame)
-        self.login_frame.setFixedSize(400, 200)
+        self.login_frame.setFixedSize(400, 350)
+        self.login_frame.setObjectName("loginFrame")
 
         form_layout = QVBoxLayout(self.login_frame)
+        form_layout.setContentsMargins(20, 20, 20, 20)
+        form_layout.setSpacing(15)
 
-        # Username
+        # title
         title_label = QLabel("DD-EN Login")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;")
         form_layout.addWidget(title_label)
+
+        # Username
         username_label = QLabel("Enter Username:")
+        username_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         self.username_input.setPlaceholderText("Username")
+        self.username_input.setStyleSheet(
+            """
+            QLineEdit {
+                padding: 10px;
+                background-color: #F3F4F6;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                background-color: #E5E7EB;
+                outline: none;
+                border: 1px solid #3B82F6;
+            }
+            """
+        )
         self.username_input.textChanged.connect(self.clear_error)
         form_layout.addWidget(username_label)
         form_layout.addWidget(self.username_input)
 
         # Password
         password_label = QLabel("Enter Password:")
+        password_label.setStyleSheet("font-size: 14px; font-weight: bold; ")
         self.password_input.setPlaceholderText("Password")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.password_input.setStyleSheet(self.username_input.styleSheet())
         self.password_input.textChanged.connect(self.clear_error)
         form_layout.addWidget(password_label)
         form_layout.addWidget(self.password_input)
 
         # Show Password Checkbox
         self.show_password_checkbox = QCheckBox("Show Password")
-        self.show_password_checkbox.stateChanged.connect(self.toggle_password_visibility)
+        self.show_password_checkbox.setStyleSheet(
+            """
+            QCheckBox { 
+                font-size: 14px;
+                color: #111827;
+            }
+            QCheckBox::indicator {
+                width: 15px;
+                height: 15px;
+                background-color: white;
+            }
+            QCheckBox::indicator:unchecked {
+                image: url(icons/unchecked.png);
+            }
+            QCheckBox::indicator:checked {
+                image: url(icons/checkbox.png);
+            }
+                        
+            """
+        )
+        self.show_password_checkbox.setEnabled(True)
+        self.show_password_checkbox.stateChanged.connect(
+            self.toggle_password_visibility
+        )
+        self.show_password_checkbox.raise_()
         form_layout.addWidget(self.show_password_checkbox)
 
         # Error message display
-        self.error_label.setStyleSheet("color: red;")
+        self.error_label.setStyleSheet("color: red; font-size: 14px;")
         self.error_label.setWordWrap(True)
         self.error_label.setVisible(False)
         form_layout.addWidget(self.error_label)
@@ -103,8 +166,23 @@ class LoginPage(QWidget):
         # Buttons for further actions
         buttons_layout = QHBoxLayout()
         skip_button = QPushButton("Skip")
-        next_button = QPushButton("Next")
-
+        next_button = QPushButton("Submit")
+        next_button.setStyleSheet(
+            """
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #6366F1, stop:1 #3B82F6);
+                color: white;
+                padding: 10px;
+                border-radius: 6px;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #4F46E5, stop:1 #2563EB);
+            }
+            """
+        )
+        skip_button.setStyleSheet(next_button.styleSheet())
         buttons_layout.addWidget(skip_button)
         buttons_layout.addWidget(next_button)
 
