@@ -1,5 +1,4 @@
 # -*- mode: python ; coding: utf-8 -*-
-
 import os
 
 # Get the absolute path of the current working directory
@@ -14,6 +13,7 @@ a = Analysis(
     pathex=['./'],
     binaries=[],
     datas=[
+        ('version.txt', '.'),
         (os.path.join(src_path, 'UI', '*'), 'UI'),
         (os.path.join(src_path, 'backend', '*'), 'backend'),
         (os.path.join(src_path, 'calculator', '*'), 'calculator'),
@@ -21,8 +21,7 @@ a = Analysis(
         (os.path.join(src_path, 'FDV', '*'), 'FDV'),
         (os.path.join(src_path, 'Interiem_reports', '*'), 'Interiem_reports'),
         (os.path.join(src_path, 'logger', '*'), 'logger'),
-        (os.path.join(src_path, 'worker', '*'), 'worker'),
-    ],
+        (os.path.join(src_path, 'worker', '*'), 'worker'),],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -39,7 +38,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Fdv_Converter',
+    name='FDV_Converter',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -49,5 +48,7 @@ exe = EXE(
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch=None,# -*- mode: python ; coding: utf-8 -*-
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
 )
