@@ -1,3 +1,6 @@
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtCore import Signal, Slot, QThread
+from PySide6.QtGui import QPainter, QColor, QPen
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -10,9 +13,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QStackedWidget,
 )
-from PySide6.QtCore import Qt, Signal, Slot, QThread
-from PySide6.QtGui import QPainter, QColor, QPen
-from PySide6.QtCore import Qt, QPoint
+
 from src.logger.logger import Logger
 from src.worker.api_worker import Worker
 from src.worker.file_worker import UploadWorker

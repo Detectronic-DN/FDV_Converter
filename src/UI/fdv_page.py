@@ -1,4 +1,7 @@
-from PySide6.QtCore import Signal, QPoint, Qt
+from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -10,15 +13,10 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QTextEdit,
     QTabWidget,
-    QHBoxLayout,
     QTabBar,
     QStyleOptionTab,
-    QStyledItemDelegate,
-    QApplication
+    QStyledItemDelegate
 )
-from PySide6.QtGui import QPainter, QColor, QPen, QPalette, QIcon
-from PySide6.QtCore import Qt, QRect
-from PySide6.QtSvg import QSvgRenderer
 
 
 class CustomTabBar(QTabBar):
