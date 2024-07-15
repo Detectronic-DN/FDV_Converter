@@ -189,7 +189,7 @@ class SiteDetailsPage(QWidget):
         # Action Buttons
         action_buttons_layout = QHBoxLayout()
         edit_timestamp_button = QPushButton("Edit Timestamp")
-        edit_timestamp_button.setFixedSize(200, 50)
+        edit_timestamp_button.setFixedSize(320, 50)
         edit_timestamp_button.setStyleSheet("""
             QPushButton {
                 background-color: #5a67d8;
@@ -218,7 +218,7 @@ class SiteDetailsPage(QWidget):
                 }
             """)
         continue_button.setCursor(Qt.PointingHandCursor)
-        continue_button.setFixedSize(200, 50)
+        continue_button.setFixedSize(320, 50)
 
         def paintEvent(event):
             QPushButton.paintEvent(continue_button, event)
@@ -267,6 +267,7 @@ class SiteDetailsPage(QWidget):
         logs_layout = QVBoxLayout()
         logs_label = QLabel("Logs")
         self.logs_display = QTextEdit()
+
         self.logs_display.setPlaceholderText("No logs available")
         self.logs_display.setReadOnly(True)
         logs_layout.addWidget(logs_label)
