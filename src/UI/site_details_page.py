@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QStackedWidget,
 )
 from PySide6.QtCore import Qt, Signal, Slot, QThread
+from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtCore import Qt, QPoint
 from src.logger.logger import Logger
 from src.worker.api_worker import Worker
 from src.worker.file_worker import UploadWorker
@@ -81,24 +83,65 @@ class SiteDetailsPage(QWidget):
 
         # Site ID Input Section
         site_id_layout = QHBoxLayout()
-        site_id_label = QLabel("Enter Site ID:")
+        site_id_label = QLabel("Site ID:")
+        site_id_label.setStyleSheet("font-size: 14px;")
         self.site_id_input = QLineEdit()
-        self.site_id_input.setPlaceholderText("Site ID")
+        self.site_id_input.setPlaceholderText("Enter Site ID")
+        self.site_id_input.setStyleSheet(
+            """
+            QLineEdit {
+                padding: 10px;
+                background-color: #F3F4F6;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                background-color: #E5E7EB;
+                outline: none;
+                border: 1px solid #3B82F6;
+            }
+            """
+        )
         self.site_id_input.returnPressed.connect(self.get_site_details)
+        get_details_button = QPushButton("Get Site Details")
+        get_details_button.setFixedSize(150, 40)
+        get_details_button.setStyleSheet("""
+            QPushButton {
+                border: 1px solid #bbbbbb;
+                border-radius: 8px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(128, 128, 255), stop:1 rgb(183, 128, 255));
+            }
+            QPushButton:hover {
+                background-color: #B780FF;
+            }   
+        """)
+        get_details_button.clicked.connect(self.get_site_details)
         site_id_layout.addWidget(site_id_label)
         site_id_layout.addWidget(self.site_id_input)
+        site_id_layout.addWidget(get_details_button)
         layout.addLayout(site_id_layout)
-
-        get_details_button = QPushButton("Get Site Details")
-        get_details_button.clicked.connect(self.get_site_details)
-        layout.addWidget(get_details_button, alignment=Qt.AlignmentFlag.AlignRight)
 
         # File Upload Section
         file_upload_layout = QHBoxLayout()
         upload_label = QLabel("Upload File:")
         self.upload_input = QLineEdit()
         self.upload_input.setPlaceholderText("Upload a CSV or Excel file")
-        browse_button = QPushButton("Browse")
+        self.upload_input.setStyleSheet(self.site_id_input.styleSheet())
+        browse_button = QPushButton("Add File")
+        browse_button.setFixedSize(100, 40)
+        browse_button.setStyleSheet("""
+            QPushButton {
+                background-color: #307750;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #469b61;
+            }
+        """)
         browse_button.clicked.connect(self.open_file_dialog)
         file_upload_layout.addWidget(upload_label)
         file_upload_layout.addWidget(self.upload_input)
@@ -108,6 +151,27 @@ class SiteDetailsPage(QWidget):
         # Site Details Display Section
         site_details_groupbox = QGroupBox()
         site_details_groupbox.setTitle("Site Details")
+        site_details_groupbox.setStyleSheet("""
+        QGroupBox {
+            border: 1px solid gray;
+            border-color: #FF17365D;
+            margin-top: 27px;
+            font-size: 14px;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+        
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            padding: 5px;
+            background-color: #FF17365D;
+            color: rgb(255, 255, 255);
+        }
+
+        """)
         site_details_layout = QVBoxLayout()
         self.site_id_label = QLabel("Site ID: ")
         self.site_name_label = QLabel("Site Name: ")
@@ -125,8 +189,53 @@ class SiteDetailsPage(QWidget):
         # Action Buttons
         action_buttons_layout = QHBoxLayout()
         edit_timestamp_button = QPushButton("Edit Timestamp")
+        edit_timestamp_button.setFixedSize(200, 50)
+        edit_timestamp_button.setStyleSheet("""
+            QPushButton {
+                background-color: #5a67d8;
+                color: #fff;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #4c51bf;
+            }
+        """)
         edit_timestamp_button.clicked.connect(self.edit_timestamps)
         continue_button = QPushButton("Continue")
+        continue_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #404660;
+                    color: #fff;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 17px 29px 17px 29px;
+                    text-align: left;
+                }
+                QPushButton:hover {
+                    background-color: #3A4059;
+                }
+            """)
+        continue_button.setCursor(Qt.PointingHandCursor)
+        continue_button.setFixedSize(200, 50)
+
+        def paintEvent(event):
+            QPushButton.paintEvent(continue_button, event)
+            painter = QPainter(continue_button)
+            painter.setRenderHint(QPainter.Antialiasing)
+
+            # Draw arrow
+            painter.setPen(QPen(QColor("#fff"), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            arrow_size = 10
+            x = continue_button.width() - 20
+            y = continue_button.height() // 2
+            painter.drawLine(QPoint(x, y), QPoint(x + arrow_size, y))
+            painter.drawLine(QPoint(x + arrow_size, y), QPoint(x + arrow_size - 5, y - 5))
+            painter.drawLine(QPoint(x + arrow_size, y), QPoint(x + arrow_size - 5, y + 5))
+
+        continue_button.paintEvent = paintEvent
+
         continue_button.clicked.connect(self.continue_to_next_page)
 
         action_buttons_layout.addWidget(edit_timestamp_button)
@@ -136,8 +245,22 @@ class SiteDetailsPage(QWidget):
         # Back Button
         back_button_layout = QHBoxLayout()
         self.back_button = QPushButton("Back")
+        self.back_button.setStyleSheet("""
+            QPushButton {
+                background-color: #a0aec0;
+                color: #1a202c;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #718096;
+            }
+        """)
         self.back_button.clicked.connect(self.on_back_button_clicked)
-        back_button_layout.addWidget(self.back_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        back_button_layout.addWidget(
+            self.back_button, alignment=Qt.AlignmentFlag.AlignLeft
+        )
         layout.addLayout(back_button_layout)
 
         # Logs Display Section
@@ -212,7 +335,7 @@ class SiteDetailsPage(QWidget):
 
     @Slot(str, str, str, str)
     def on_site_details_retrieved(
-        self, site_id, site_name, start_timestamp, end_timestamp
+            self, site_id, site_name, start_timestamp, end_timestamp
     ) -> None:
         """
         Handles the signal when site details are retrieved.

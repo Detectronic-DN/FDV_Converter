@@ -285,7 +285,7 @@ class Dd:
                     site_data["channel_data"]["second"],
                 ).strftime("%Y-%m-%d %H:%M:%S")
                 start_epoch = self.convert_to_epoch(start_time)
-                end_epoch = site_data["channel_data"]["end_date"]
+                end_epoch = site_data["channel_data"]["endDate"]
             else:
                 start_epoch = self.convert_to_epoch(start_time)
                 end_epoch = self.convert_to_epoch(end_time)
@@ -421,7 +421,7 @@ class Dd:
 
             df[timestamp_column] = df[timestamp_column].dt.strftime("%Y-%m-%d %H:%M:%S")
 
-            logger.info(f"{gap_count} gaps filled in the self.")
+            logger.info(f"{gap_count} gaps filled.")
             return df, gap_count
         except Exception as e:
             logger.error(f"Error filling gaps: {e}")
@@ -451,12 +451,12 @@ class Dd:
                 return None
 
             # Parse dates in the first column
-            logger.info("Parsing dates in the self.")
+            logger.info("Parsing dates...")
             df[df.columns[0]] = Dd.parse_dates(df[df.columns[0]])
             logger.info("Dates parsed successfully.")
 
             # Ensure timestamps are sorted
-            logger.info("Sorting timestamps in the self.")
+            logger.info("Sorting timestamps...")
             df.sort_values(by=df.columns[0], inplace=True)
 
             # Calculate interval and fill gaps
