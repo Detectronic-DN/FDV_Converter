@@ -174,6 +174,7 @@ class FDVPage(QWidget):
 
         self.init_ui()
         self.setup_connections()
+        self.update_site_info(site_id, start_timestamp, end_timestamp)
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -506,6 +507,13 @@ class FDVPage(QWidget):
                     }
                 """)
         layout.addWidget(self.back_button)
+
+    def update_site_info(self, site_id, start_timestamp, end_timestamp):
+        self.site_id = site_id
+        self.start_timestamp = start_timestamp
+        self.end_timestamp = end_timestamp
+        self.site_name_field.setText(site_id)
+        self.rainfall_site_name_field.setText(site_id)
 
     def setup_connections(self):
         # Connect backend signals to the appropriate slots

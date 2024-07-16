@@ -379,6 +379,9 @@ class Backend(QObject):
             df, gaps, file_path, interval = result
             self.log_info(f"There are {gaps} gaps in the data.")
 
+            self.site_id = None
+            self.site_name = None
+
             # Extract site ID and site name from the file name
             file_name = os.path.basename(file_path)
             site_name = file_name.split(".")[0]

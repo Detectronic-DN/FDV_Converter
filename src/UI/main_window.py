@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
 
 from src.UI.fdv_page import FDVPage
 from src.UI.login_page import LoginPage

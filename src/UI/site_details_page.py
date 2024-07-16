@@ -287,6 +287,7 @@ class SiteDetailsPage(QWidget):
         if file_dialog.exec():
             file_path = file_dialog.selectedFiles()[0]
             self.upload_input.setText(file_path)
+            self.clear_site_details()
             # Run the CSV or Excel upload in a separate thread
             self.upload_worker.upload_csv_file.emit(file_path)
 
@@ -308,6 +309,7 @@ class SiteDetailsPage(QWidget):
         if site_id:
             self.open_folder_dialog()
             if self.folder_path:
+                self.clear_site_details()
                 # Run the CSV download in a separate thread
                 self.worker.download_csv_file.emit(site_id, self.folder_path)
             else:
@@ -395,3 +397,14 @@ class SiteDetailsPage(QWidget):
         Clears the logs display widget.
         """
         self.logs_display.clear()
+
+    def clear_site_details(self):
+        self.site_id_label.setText("Site ID: ")
+        self.site_name_label.setText("Site Name: ")
+        self.start_timestamp_label.setText("Start Timestamp: ")
+        self.end_timestamp_label.setText("End Timestamp: ")
+        self.siteId = ""
+        self.siteName = ""
+        self.startTimestamp = ""
+        self.endTimestamp = ""
+        self.filePath = ""
