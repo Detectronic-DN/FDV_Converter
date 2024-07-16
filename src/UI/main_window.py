@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
+from PySide6.QtGui import QIcon
 
 from src.UI.fdv_page import FDVPage
 from src.UI.login_page import LoginPage
@@ -38,15 +39,14 @@ class MainWindow(QMainWindow):
         self.site_details_page.continue_to_next.connect(self.show_fdv_page)
 
         # Apply the light theme stylesheet
-        self.apply_stylesheet("./light_theme_stylesheet.qss")
+        self.setStyleSheet("""
+            QWidget {
+              background-color: #ffffff;
+              color: #000000;
+            }
+        """)
+        self.setWindowIcon(QIcon('icons/calculation.ico'))
         self.show()
-
-    def apply_stylesheet(self, stylesheet_path):
-        """
-        Applies the stylesheet to the application.
-        """
-        with open(stylesheet_path, "r") as file:
-            self.setStyleSheet(file.read())
 
     def show_site_details_page(self) -> None:
         """
