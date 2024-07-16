@@ -13,12 +13,15 @@ requests_modules = collect_submodules('requests')
 keyring_modules = collect_submodules('keyring')
 pendulum_modules = collect_submodules('pendulum')
 
+icon_path = os.path.join('src', 'UI', 'icons', 'app_icon.ico')
 a = Analysis(
     ['src\\UI\\main.py'],
     pathex=[],
     binaries=[],
     datas=[
         ('src', 'src'),
+        (icon_path, os.path.join('src', 'UI', 'icons'))
+
     ] +
            collect_data_files('PySide6') +
            collect_data_files('pandas') +
@@ -63,5 +66,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    
+    icon=icon_path
 )
