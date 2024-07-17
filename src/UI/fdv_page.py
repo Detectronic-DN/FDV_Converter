@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QTabBar,
     QStyleOptionTab,
     QStyledItemDelegate,
+    QFrame,
 )
 
 
@@ -295,11 +296,44 @@ class FDVPage(QWidget):
         """
         )
         fdv_layout.addWidget(self.create_fdv_button, 5, 1)
+        # Logs Display Section
+        logs_frame = QFrame()
+        logs_frame.setObjectName("logsFrame")
+        logs_frame.setStyleSheet(
+            """
+            #logsFrame {
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+            }
+        """
+        )
+        logs_layout = QVBoxLayout(logs_frame)
+        logs_label = QLabel("FDV Logs")
+        logs_label.setStyleSheet(
+            """
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 5px;
+        """
+        )
+        logs_layout.addWidget(logs_label)
 
-        fdv_layout.addWidget(QLabel("FDV Logs:"), 6, 0)
+        fdv_layout.addWidget(logs_label, 6, 0)
         self.fdv_logs_display = QTextEdit()
         self.fdv_logs_display.setReadOnly(True)
         self.fdv_logs_display.setPlaceholderText("No FDV file created yet")
+        self.fdv_logs_display.setStyleSheet(
+            """
+                    QTextEdit {
+                        border: 1px solid #e5e7eb;
+                        border-radius: 4px;
+                        background-color: white;
+                        padding: 8px;
+                        font-family: monospace;
+                        font-size: 12px;
+                    }
+                """
+        )
 
         fdv_scroll_area = QScrollArea()
         fdv_scroll_area.setWidgetResizable(True)
@@ -389,11 +423,44 @@ class FDVPage(QWidget):
         """
         )
         rainfall_layout.addWidget(self.create_rainfall_button, 2, 1)
-        rainfall_layout.addWidget(QLabel("Rainfall Logs:"), 3, 0)
+        # Logs Display Section
+        logs_frame = QFrame()
+        logs_frame.setObjectName("logsFrame")
+        logs_frame.setStyleSheet(
+            """
+            #logsFrame {
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+            }
+        """
+        )
+        logs_layout = QVBoxLayout(logs_frame)
+        rainfall_logs_label = QLabel("Rainfall Logs")
+        rainfall_logs_label.setStyleSheet(
+            """
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 5px;
+        """
+        )
+        logs_layout.addWidget(rainfall_logs_label)
+        rainfall_layout.addWidget(rainfall_logs_label, 3, 0)
 
         self.rainfall_logs_display = QTextEdit()
         self.rainfall_logs_display.setReadOnly(True)
         self.rainfall_logs_display.setPlaceholderText("No Rainfall file created yet")
+        self.rainfall_logs_display.setStyleSheet(
+            """
+            QTextEdit {
+                border: 1px solid #e5e7eb;
+                border-radius: 4px;
+                background-color: white;
+                padding: 8px;
+                font-family: monospace;
+                font-size: 12px;
+            }
+            """
+        )
         rainfall_scroll_area = QScrollArea()
         rainfall_scroll_area.setWidgetResizable(True)
         rainfall_scroll_area.setWidget(self.rainfall_logs_display)
