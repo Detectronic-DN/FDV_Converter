@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Fdv Converter"
-#define MyAppVersion "2.0"
+#define MyAppVersion "2.1"
 #define MyAppPublisher "Detectronic Limited "
 #define MyAppExeName "FDV Converter.exe"
 
@@ -19,7 +19,7 @@ DisableProgramGroupPage=yes
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 OutputDir=C:\Users\DineshNimmagadda\Downloads
-OutputBaseFilename=Fdv_Converter_2.0
+OutputBaseFilename=Fdv_Converter_2.1
 SetupIconFile=C:\Users\DineshNimmagadda\development\document.ico
 Compression=lzma
 SolidCompression=yes
