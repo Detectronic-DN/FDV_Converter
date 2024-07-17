@@ -1,5 +1,4 @@
-from PySide6.QtCore import Qt, QRect
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, QRect, Signal
 from PySide6.QtGui import QPainter, QColor, QPen
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -15,7 +14,7 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QTabBar,
     QStyleOptionTab,
-    QStyledItemDelegate
+    QStyledItemDelegate,
 )
 
 
@@ -63,7 +62,8 @@ class CustomTabBar(QTabBar):
 class CustomComboBox(QComboBox):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QComboBox {
                 background-color: white;
                 border: 1px solid #e0e0e0;
@@ -99,7 +99,8 @@ class CustomComboBox(QComboBox):
                 background-color: #e0e0e0;
                 color: #333333;
             }
-        """)
+        """
+        )
 
         # Custom item delegate for hover effect
         delegate = QStyledItemDelegate(self)
@@ -108,7 +109,7 @@ class CustomComboBox(QComboBox):
         self.arrow_svg = """<svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512"> <path 
         d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 
         86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"></path> </svg>"""
-        self.svg_renderer = QSvgRenderer(self.arrow_svg.encode('utf-8'))
+        self.svg_renderer = QSvgRenderer(self.arrow_svg.encode("utf-8"))
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -116,18 +117,18 @@ class CustomComboBox(QComboBox):
 
         # Draw the background
         if self.view().isVisible() or self.currentIndex() != -1:
-            painter.fillRect(self.rect(), QColor('#f0f0f0'))
+            painter.fillRect(self.rect(), QColor("#f0f0f0"))
         else:
-            painter.fillRect(self.rect(), QColor('white'))
+            painter.fillRect(self.rect(), QColor("white"))
 
         # Draw the border
-        pen = QPen(QColor('#e0e0e0'))
+        pen = QPen(QColor("#e0e0e0"))
         pen.setWidth(1)
         painter.setPen(pen)
         painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 4, 4)
 
         # Draw the text
-        painter.setPen(QColor('#333333'))
+        painter.setPen(QColor("#333333"))
         text_rect = self.rect().adjusted(10, 0, -30, 0)
         painter.drawText(text_rect, Qt.AlignVCenter | Qt.AlignLeft, self.currentText())
 
@@ -258,7 +259,8 @@ class FDVPage(QWidget):
         fdv_layout.addWidget(self.pipe_size_field, 4, 1)
 
         self.interim_reports_button = QPushButton("Interim Reports")
-        self.interim_reports_button.setStyleSheet("""
+        self.interim_reports_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #307750;
                 color: white;
@@ -269,11 +271,13 @@ class FDVPage(QWidget):
             QPushButton:hover {
                 background-color: #469b61;
             }
-        """)
+        """
+        )
         fdv_layout.addWidget(self.interim_reports_button, 5, 0)
 
         self.create_fdv_button = QPushButton("Create FDV")
-        self.create_fdv_button.setStyleSheet("""
+        self.create_fdv_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #40B3A2;
                 color: white;
@@ -288,7 +292,8 @@ class FDVPage(QWidget):
             QPushButton:hover {
                 background-color: #368f81;
             }
-        """)
+        """
+        )
         fdv_layout.addWidget(self.create_fdv_button, 5, 1)
 
         fdv_layout.addWidget(QLabel("FDV Logs:"), 6, 0)
@@ -334,7 +339,8 @@ class FDVPage(QWidget):
         rainfall_layout.addWidget(self.rainfall_column_combo_box, 1, 1)
 
         self.create_rainfall_button = QPushButton("Create Rainfall")
-        self.create_rainfall_button.setStyleSheet("""
+        self.create_rainfall_button.setStyleSheet(
+            """
             QPushButton {
                 padding: 10px 20px;
                 border-radius: 8px;
@@ -380,7 +386,8 @@ class FDVPage(QWidget):
                                             stop:0 #3498db,
                                             stop:1 #34495e);
             }
-        """)
+        """
+        )
         rainfall_layout.addWidget(self.create_rainfall_button, 2, 1)
         rainfall_layout.addWidget(QLabel("Rainfall Logs:"), 3, 0)
 
@@ -494,7 +501,8 @@ class FDVPage(QWidget):
         layout.addWidget(self.tab_widget)
 
         self.back_button = QPushButton("Back")
-        self.back_button.setStyleSheet("""
+        self.back_button.setStyleSheet(
+            """
                     QPushButton {
                         background-color: #a0aec0;
                         color: #1a202c;
@@ -505,7 +513,8 @@ class FDVPage(QWidget):
                     QPushButton:hover {
                         background-color: #718096;
                     }
-                """)
+                """
+        )
         layout.addWidget(self.back_button)
 
     def update_site_info(self, site_id, start_timestamp, end_timestamp):
