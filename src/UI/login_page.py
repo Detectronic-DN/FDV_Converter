@@ -133,7 +133,7 @@ class LoginPage(QWidget):
         self.show_password_checkbox.setStyleSheet(
             """
             QCheckBox { 
-                font-size: 14px;
+                font-size: 12px;
                 color: #111827;
             }
             QCheckBox::indicator {
