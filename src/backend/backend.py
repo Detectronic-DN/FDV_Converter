@@ -247,7 +247,7 @@ class Backend(QObject):
         }
 
         # Define patterns for dynamic column matching
-        depth_pattern = re.compile(r"(\d+)_(\d+)\|.*Depth\|m")
+        depth_pattern = re.compile(r"(\d+)_(\d+)\|(.*?)\|(.*)")
         flow_pattern = re.compile(r"(\d+)_(\d+)\|.*Flow\|l/s")
         velocity_pattern = re.compile(r"(\d+)_(\d+)\|.*Velocity\|m/s")
         rainfall_pattern = re.compile(r"(\d+)_(\d+)\|.*Rainfall\|mm")
@@ -316,8 +316,18 @@ class Backend(QObject):
             )
             if depth_cols_info:
                 column_mapping["depth"] = depth_cols_info
-                self.site_id = depth_cols_info[0][2]
-                self.channel_id = depth_cols_info[0][3]
+                depth_col_match = depth_pattern.match(depth_cols_info[0][0])
+                if depth_col_match:
+                    self.site_id = depth_col_match.group(1)
+                    self.channel_id = depth_col_match.group(2)
+                    measurement = depth_col_match.group(3)
+                    unit = depth_col_match.group(4)
+                else:
+                    self.site_id = "Unknown"
+                    self.channel_id = "Unknown"
+                    self.log_warning(
+                        "Could not extract site and channel info from depth column name"
+                    )
             else:
                 raise ValueError("Required depth column not found for Depth Monitor.")
         elif self.monitor_type == "Flow":
@@ -409,6 +419,27 @@ class Backend(QObject):
             self.interval = interval
 
             self.column_map = self.get_column_names_and_indices(file_name, df)
+            if self.site_id == "Unknown":
+                # If we couldn't extract from column name, try to get from file name
+                for part in name_parts:
+                    if part.isdigit():
+                        self.site_id = part
+                        break
+
+            # If we have a site_id, use it to construct the site_name
+            if self.site_id != "Unknown":
+                site_name_parts = [part for part in name_parts if part != self.site_id]
+                self.site_name = (
+                    " ".join(site_name_parts)
+                    if site_name_parts
+                    else f"Site {self.site_id}"
+                )
+            else:
+                # If we still don't have a site_id, use the whole filename as site_name
+                self.site_name = site_name
+                self.log_warning(
+                    f"Could not determine site ID. Using full filename as site name: {self.site_name}"
+                )
 
             # Emit signal with site details
             time_col = self.identify_timestamp_column(df)
