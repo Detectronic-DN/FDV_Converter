@@ -225,7 +225,7 @@ class Backend(QObject):
         raise ValueError("Timestamp column not found.")
 
     def get_column_names_and_indices(
-            self, file_name: str, df: pd.DataFrame
+        self, file_name: str, df: pd.DataFrame
     ) -> Dict[str, list]:
         """
         Extract and validate column names and their indices based on the monitor type identified from the file name.
@@ -260,13 +260,13 @@ class Backend(QObject):
 
         def extract_columns(pattern, df_columns, custom_key=None):
             matches = [
-                (pattern.match(col), col, df_columns.get_loc(col))
+                (pattern.match(col), col, df.columns.get_loc(col))
                 for col in df_columns
                 if pattern.match(col)
             ]
             if not matches and custom_key:
                 matches = [
-                    (None, col, df_columns.get_loc(col))
+                    (None, col, df.columns.get_loc(col))
                     for col in df_columns
                     if any(
                         alias.lower() in col.lower()
@@ -283,6 +283,24 @@ class Backend(QObject):
                 for match in matches
             ]
 
+        # Extract columns for specific types first
+        flow_cols = extract_columns(flow_pattern, df.columns, custom_key="flow")
+        velocity_cols = extract_columns(
+            velocity_pattern, df.columns, custom_key="velocity"
+        )
+        rainfall_cols = extract_columns(
+            rainfall_pattern, df.columns, custom_key="rainfall"
+        )
+
+        # Now extract depth columns, excluding already matched columns
+        matched_columns = set(
+            col[0] for cols in [flow_cols, velocity_cols, rainfall_cols] for col in cols
+        )
+        remaining_columns = [col for col in df.columns if col not in matched_columns]
+        depth_cols = extract_columns(
+            depth_pattern, remaining_columns, custom_key="depth"
+        )
+
         # Determine monitor type based on file name or column presence
         if file_name.startswith("DM"):
             self.monitor_type = "Depth"
@@ -292,12 +310,6 @@ class Backend(QObject):
             self.monitor_type = "Rainfall"
         else:
             # If file name doesn't indicate monitor type, determine from columns
-            depth_cols = extract_columns(depth_pattern, df.columns, custom_key="depth")
-            flow_cols = extract_columns(flow_pattern, df.columns, custom_key="flow")
-            rainfall_cols = extract_columns(
-                rainfall_pattern, df.columns, custom_key="rainfall"
-            )
-
             if rainfall_cols:
                 self.monitor_type = "Rainfall"
             elif flow_cols:
@@ -309,62 +321,34 @@ class Backend(QObject):
 
         self.log_info(f"Monitor type: {self.monitor_type}")
 
-        # Process columns based on determined monitor type
-        if self.monitor_type == "Depth":
-            depth_cols_info = extract_columns(
-                depth_pattern, df.columns, custom_key="depth"
-            )
-            if depth_cols_info:
-                column_mapping["depth"] = depth_cols_info
-                depth_col_match = depth_pattern.match(depth_cols_info[0][0])
-                if depth_col_match:
-                    self.site_id = depth_col_match.group(1)
-                    self.channel_id = depth_col_match.group(2)
-                    measurement = depth_col_match.group(3)
-                    unit = depth_col_match.group(4)
-                else:
-                    self.site_id = "Unknown"
-                    self.channel_id = "Unknown"
-                    self.log_warning(
-                        "Could not extract site and channel info from depth column name"
-                    )
-            else:
-                raise ValueError("Required depth column not found for Depth Monitor.")
-        elif self.monitor_type == "Flow":
-            flow_cols_info = extract_columns(
-                flow_pattern, df.columns, custom_key="flow"
-            )
-            depth_cols_info = extract_columns(
-                depth_pattern, df.columns, custom_key="depth"
-            )
-            velocity_cols_info = extract_columns(
-                velocity_pattern, df.columns, custom_key="velocity"
-            )
+        # Assign extracted columns to column_mapping
+        column_mapping["flow"] = flow_cols
+        column_mapping["velocity"] = velocity_cols
+        column_mapping["rainfall"] = rainfall_cols
+        column_mapping["depth"] = depth_cols
 
-            if flow_cols_info:
-                column_mapping["flow"] = flow_cols_info
-                self.site_id = flow_cols_info[0][2]
-                self.channel_id = flow_cols_info[0][3]
-            if depth_cols_info:
-                column_mapping["depth"] = depth_cols_info
-            if velocity_cols_info:
-                column_mapping["velocity"] = velocity_cols_info
-            if not (flow_cols_info or depth_cols_info or velocity_cols_info):
-                raise ValueError("Required columns not found for Flow Monitor.")
-        elif self.monitor_type == "Rainfall":
-            rainfall_cols_info = extract_columns(
-                rainfall_pattern, df.columns, custom_key="rainfall"
-            )
-            if rainfall_cols_info:
-                column_mapping["rainfall"] = rainfall_cols_info
-                self.site_id = rainfall_cols_info[0][2]
-                self.channel_id = rainfall_cols_info[0][3]
+        # Set site_id and channel_id based on the determined monitor type
+        if self.monitor_type == "Depth" and depth_cols:
+            depth_col_match = depth_pattern.match(depth_cols[0][0])
+            if depth_col_match:
+                self.site_id = depth_col_match.group(1)
+                self.channel_id = depth_col_match.group(2)
             else:
-                raise ValueError(
-                    "Required rainfall column not found for Rainfall Gauge Monitor."
+                self.site_id = "Unknown"
+                self.channel_id = "Unknown"
+                self.log_warning(
+                    "Could not extract site and channel info from depth column name"
                 )
+        elif self.monitor_type == "Flow" and flow_cols:
+            self.site_id = flow_cols[0][2]
+            self.channel_id = flow_cols[0][3]
+        elif self.monitor_type == "Rainfall" and rainfall_cols:
+            self.site_id = rainfall_cols[0][2]
+            self.channel_id = rainfall_cols[0][3]
         else:
-            raise ValueError("Unknown monitor type")
+            self.site_id = "Unknown"
+            self.channel_id = "Unknown"
+            self.log_warning("Could not determine site and channel info")
 
         return column_mapping
 
@@ -410,7 +394,7 @@ class Backend(QObject):
 
             if self.site_id:
                 # If we found a site ID, everything after it is potentially the site name
-                site_name_parts = name_parts[name_parts.index(self.site_id) + 1:]
+                site_name_parts = name_parts[name_parts.index(self.site_id) + 1 :]
                 if site_name_parts:
                     self.site_name = " ".join(site_name_parts)
             else:
@@ -558,7 +542,7 @@ class Backend(QObject):
 
             # Apply the timestamp mask
             mask = (df[time_col] >= pd.to_datetime(self.modified_start_timestamp)) & (
-                    df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
+                df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
             )
             modified_df = df.loc[mask]
 
@@ -582,12 +566,12 @@ class Backend(QObject):
 
     @Slot(str, str, str, str, str)
     def create_fdv(
-            self,
-            site_name: str,
-            pipe_type: str,
-            pipe_size_param: str,
-            depth_col: Optional[str],
-            velocity_col: Optional[str],
+        self,
+        site_name: str,
+        pipe_type: str,
+        pipe_size_param: str,
+        depth_col: Optional[str],
+        velocity_col: Optional[str],
     ) -> None:
         """
         Create an FDV file.
