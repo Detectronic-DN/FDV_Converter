@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtCore import Signal, Slot, QThread
-from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtGui import QPainter, QColor, QPen, QMovie
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -42,6 +42,7 @@ class SiteDetailsPage(QWidget):
         self.backend = backend
         self.stack = stack
         self.logger = Logger(__name__, emit_func=self.append_log)
+        self.spinner = None
 
         # Worker thread setup for downloading
         self.worker = Worker(backend)
@@ -197,6 +198,9 @@ class SiteDetailsPage(QWidget):
         site_details_groupbox.setLayout(site_details_layout)
         layout.addWidget(site_details_groupbox)
 
+        self.setup_spinners()
+        layout.addWidget(self.spinner, alignment=Qt.AlignmentFlag.AlignCenter)
+
         # Action Buttons
         action_buttons_layout = QGridLayout()
         action_buttons_layout.setSpacing(10)  # Space between buttons
@@ -329,6 +333,18 @@ class SiteDetailsPage(QWidget):
         layout.addLayout(logs_layout)
         self.setLayout(layout)
 
+    def setup_spinners(self):
+        """
+        setups the spinner animation
+        """
+        self.spinner = QLabel(self)
+        movie = QMovie("icons/spinner.gif")
+        self.spinner.setMovie(movie)
+        movie.start()
+        self.spinner.setAlignment(Qt.AlignCenter)
+        self.spinner.setFixedSize(50, 50)
+        self.spinner.hide()
+
     def open_file_dialog(self) -> None:
         """
         Opens a file dialog to select a CSV or Excel file.
@@ -427,8 +443,12 @@ class SiteDetailsPage(QWidget):
         self.isBusy = is_busy
         if is_busy:
             self.logs_display.append("Processing, please wait...")
+            self.spinner.show()
+            self.disable_buttons()
         else:
             self.logs_display.append("Processing complete.")
+            self.spinner.hide()
+            self.enable_buttons()
 
     def append_log(self, log_message: str):
         """
@@ -460,3 +480,11 @@ class SiteDetailsPage(QWidget):
         self.startTimestamp = ""
         self.endTimestamp = ""
         self.filePath = ""
+
+    def disable_buttons(self):
+        self.back_button.setEnabled(False)
+        self.site_id_input.setEnabled(False)
+
+    def enable_buttons(self):
+        self.back_button.setEnabled(True)
+        self.site_id_input.setEnabled(True)
