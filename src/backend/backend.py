@@ -225,7 +225,7 @@ class Backend(QObject):
         raise ValueError("Timestamp column not found.")
 
     def get_column_names_and_indices(
-        self, file_name: str, df: pd.DataFrame
+            self, file_name: str, df: pd.DataFrame
     ) -> Dict[str, list]:
         """
         Extract and validate column names and their indices based on the monitor type identified from the file name.
@@ -410,7 +410,7 @@ class Backend(QObject):
 
             if self.site_id:
                 # If we found a site ID, everything after it is potentially the site name
-                site_name_parts = name_parts[name_parts.index(self.site_id) + 1 :]
+                site_name_parts = name_parts[name_parts.index(self.site_id) + 1:]
                 if site_name_parts:
                     self.site_name = " ".join(site_name_parts)
             else:
@@ -558,7 +558,7 @@ class Backend(QObject):
 
             # Apply the timestamp mask
             mask = (df[time_col] >= pd.to_datetime(self.modified_start_timestamp)) & (
-                df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
+                    df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
             )
             modified_df = df.loc[mask]
 
@@ -582,12 +582,12 @@ class Backend(QObject):
 
     @Slot(str, str, str, str, str)
     def create_fdv(
-        self,
-        site_name: str,
-        pipe_type: str,
-        pipe_size_param: str,
-        depth_col: Optional[str],
-        velocity_col: Optional[str],
+            self,
+            site_name: str,
+            pipe_type: str,
+            pipe_size_param: str,
+            depth_col: Optional[str],
+            velocity_col: Optional[str],
     ) -> None:
         """
         Create an FDV file.
