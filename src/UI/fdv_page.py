@@ -1,5 +1,5 @@
-from PySide6.QtCore import Qt, QRect, Signal
-from PySide6.QtGui import QPainter, QColor, QPen
+from PySide6.QtCore import Qt, QRect, Signal, Slot, QTimer
+from PySide6.QtGui import QPainter, QColor, QPen, QMovie
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QWidget,
@@ -144,6 +144,7 @@ class FDVPage(QWidget):
 
     def __init__(self, backend, filepath, site_id, start_timestamp, end_timestamp):
         super().__init__()
+        self.isBusy = None
         self.back_button = None
         self.use_r3_button = None
         self.calculate_r3_button = None
@@ -169,6 +170,8 @@ class FDVPage(QWidget):
         self.site_id = site_id
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
+        self.spinner = None
+        self.setup_spinners()
 
         self.selected_depth_column = ""
         self.selected_velocity_column = ""
@@ -177,6 +180,18 @@ class FDVPage(QWidget):
         self.init_ui()
         self.setup_connections()
         self.update_site_info(site_id, start_timestamp, end_timestamp)
+
+    def setup_spinners(self):
+        """
+        setups the spinner animation
+        """
+        self.spinner = QLabel(self)
+        movie = QMovie("icons/spinner.gif")
+        self.spinner.setMovie(movie)
+        movie.start()
+        self.spinner.setAlignment(Qt.AlignCenter)
+        self.spinner.setFixedSize(50, 50)
+        self.spinner.hide()
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -274,6 +289,7 @@ class FDVPage(QWidget):
             }
         """
         )
+        self.interim_reports_button.clicked.connect(self.backend.create_interim_reports)
         fdv_layout.addWidget(self.interim_reports_button, 5, 0)
 
         self.create_fdv_button = QPushButton("Create FDV")
@@ -295,7 +311,10 @@ class FDVPage(QWidget):
             }
         """
         )
+        self.create_fdv_button.clicked.connect(self.create_fdv)
         fdv_layout.addWidget(self.create_fdv_button, 5, 1)
+        self.spinner.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        fdv_layout.addWidget(self.spinner)
         # Logs Display Section
         logs_frame = QFrame()
         logs_frame.setObjectName("logsFrame")
@@ -422,6 +441,7 @@ class FDVPage(QWidget):
             }
         """
         )
+        self.create_rainfall_button.clicked.connect(self.create_rainfall)
         rainfall_layout.addWidget(self.create_rainfall_button, 2, 1)
         # Logs Display Section
         logs_frame = QFrame()
@@ -557,10 +577,12 @@ class FDVPage(QWidget):
 
         self.calculate_r3_button = QPushButton("Calculate R3")
         self.calculate_r3_button.setStyleSheet(button_style)
+        self.calculate_r3_button.clicked.connect(self.calculate_r3)
         r3_layout.addWidget(self.calculate_r3_button, 4, 0)
 
         self.use_r3_button = QPushButton("Use R3 in FDV")
         self.use_r3_button.setStyleSheet(button_style)
+        self.use_r3_button.clicked.connect(self.use_r3_in_fdv)
         r3_layout.addWidget(self.use_r3_button, 4, 1)
         r3_calculator_tab.setLayout(r3_layout)
         self.tab_widget.addTab(r3_calculator_tab, "R3 Calculator")
@@ -582,6 +604,7 @@ class FDVPage(QWidget):
                     }
                 """
         )
+        self.back_button.clicked.connect(self.on_back_button_clicked)
         layout.addWidget(self.back_button)
 
     def update_site_info(self, site_id, start_timestamp, end_timestamp):
@@ -612,13 +635,6 @@ class FDVPage(QWidget):
         self.rainfall_column_combo_box.currentIndexChanged.connect(
             self.on_rainfall_column_selected
         )
-
-        self.interim_reports_button.clicked.connect(self.backend.create_interim_reports)
-        self.create_fdv_button.clicked.connect(self.create_fdv)
-        self.create_rainfall_button.clicked.connect(self.create_rainfall)
-        self.calculate_r3_button.clicked.connect(self.calculate_r3)
-        self.use_r3_button.clicked.connect(self.use_r3_in_fdv)
-        self.back_button.clicked.connect(self.on_back_button_clicked)
 
     def on_columns_retrieved(self, columns):
         self.depth_column_combo_box.clear()
@@ -682,7 +698,23 @@ class FDVPage(QWidget):
     def on_rainfall_column_selected(self):
         self.selected_rainfall_column = self.rainfall_column_combo_box.currentText()
 
+    @Slot(bool)
+    def on_busy_changed(self, is_busy) -> None:
+        """
+        Handles the signal when the busy state changes.
+        """
+        self.isBusy = is_busy
+        if is_busy:
+            self.fdv_logs_display.append("Processing, please wait...")
+            self.spinner.show()
+            self.disable_buttons()
+        else:
+            self.fdv_logs_display.append("Processing complete.")
+            self.spinner.hide()
+            self.enable_buttons()
+
     def create_fdv(self):
+        self.on_busy_changed(True)
         depth_column = (
             "" if self.selected_depth_column == "None" else self.selected_depth_column
         )
@@ -698,16 +730,31 @@ class FDVPage(QWidget):
         else:
             pipe_size_param = self.pipe_size_field.text()
 
-        self.backend.create_fdv(
-            self.site_name_field.text(),
-            self.pipe_shape_combo_box.currentText(),
-            pipe_size_param,
-            depth_column,
-            velocity_column,
+        QTimer.singleShot(
+            100,
+            lambda: self.perform_fdv_creation(
+                self.site_name_field.text(),
+                self.pipe_shape_combo_box.currentText(),
+                pipe_size_param,
+                depth_column,
+                velocity_column,
+            ),
         )
 
+    def perform_fdv_creation(
+        self, site_name, pipe_shape, pipe_size, depth_column, velocity_column
+    ):
+        try:
+            self.backend.create_fdv(
+                site_name, pipe_shape, pipe_size, depth_column, velocity_column
+            )
+        finally:
+            self.on_busy_changed(False)
+
     def create_rainfall(self):
+        self.on_busy_changed(True)
         self.backend.create_rainfall(self.site_id, self.selected_rainfall_column)
+        self.on_busy_changed(False)
 
     def calculate_r3(self):
         width = float(self.pipe_width_field.text())
@@ -725,3 +772,19 @@ class FDVPage(QWidget):
         self.back_button_clicked.emit()
         self.fdv_logs_display.clear()
         self.rainfall_logs_display.clear()
+
+    def disable_buttons(self):
+        self.create_fdv_button.setEnabled(False)
+        self.create_rainfall_button.setEnabled(False)
+        self.use_r3_button.setEnabled(False)
+        self.calculate_r3_button.setEnabled(False)
+        self.interim_reports_button.setEnabled(False)
+        self.back_button.setEnabled(False)
+
+    def enable_buttons(self):
+        self.create_fdv_button.setEnabled(True)
+        self.create_rainfall_button.setEnabled(True)
+        self.use_r3_button.setEnabled(True)
+        self.calculate_r3_button.setEnabled(True)
+        self.interim_reports_button.setEnabled(True)
+        self.back_button.setEnabled(True)
