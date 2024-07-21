@@ -247,7 +247,7 @@ class Backend(QObject):
         }
 
         # Define patterns for dynamic column matching
-        depth_pattern = re.compile(r"(\d+)_(\d+)\|(.*?)\|(.*)")
+        depth_pattern = re.compile(r"(\d+)_(\d+)\|.*(Depth|Level)\|m")
         flow_pattern = re.compile(r"(\d+)_(\d+)\|.*Flow\|l/s")
         velocity_pattern = re.compile(r"(\d+)_(\d+)\|.*Velocity\|m/s")
         rainfall_pattern = re.compile(r"(\d+)_(\d+)\|.*Rainfall\|mm")
@@ -259,12 +259,23 @@ class Backend(QObject):
         )
 
         def extract_columns(pattern, df_columns, custom_key=None):
+            """
+            Extracts columns based on a given pattern and a set of DataFrame columns.
+
+            Args:
+                pattern: A regular expression pattern to match against the columns.
+                df_columns: The columns of the DataFrame to match against.
+                custom_key: A key to customize the column matching process (default is None).
+
+            Returns:
+                A list of tuples containing matched columns, their indices, and additional extracted groups.
+            """
             matches = [
                 (pattern.match(col), col, df.columns.get_loc(col))
                 for col in df_columns
                 if pattern.match(col)
             ]
-            if not matches and custom_key:
+            if not matches and custom_key and custom_key in self.custom_column_mapping:
                 matches = [
                     (None, col, df.columns.get_loc(col))
                     for col in df_columns
@@ -283,23 +294,16 @@ class Backend(QObject):
                 for match in matches
             ]
 
-        # Extract columns for specific types first
-        flow_cols = extract_columns(flow_pattern, df.columns, custom_key="flow")
-        velocity_cols = extract_columns(
-            velocity_pattern, df.columns, custom_key="velocity"
-        )
-        rainfall_cols = extract_columns(
-            rainfall_pattern, df.columns, custom_key="rainfall"
-        )
-
-        # Now extract depth columns, excluding already matched columns
-        matched_columns = set(
-            col[0] for cols in [flow_cols, velocity_cols, rainfall_cols] for col in cols
-        )
-        remaining_columns = [col for col in df.columns if col not in matched_columns]
-        depth_cols = extract_columns(
-            depth_pattern, remaining_columns, custom_key="depth"
-        )
+        # Extract columns for specific types
+        for col_type, pattern in [
+            ("flow", flow_pattern),
+            ("depth", depth_pattern),
+            ("velocity", velocity_pattern),
+            ("rainfall", rainfall_pattern),
+        ]:
+            cols = extract_columns(pattern, df.columns, custom_key=col_type)
+            if cols:
+                column_mapping[col_type] = cols
 
         # Determine monitor type based on file name or column presence
         if file_name.startswith("DM"):
@@ -310,26 +314,20 @@ class Backend(QObject):
             self.monitor_type = "Rainfall"
         else:
             # If file name doesn't indicate monitor type, determine from columns
-            if rainfall_cols:
+            if column_mapping["rainfall"]:
                 self.monitor_type = "Rainfall"
-            elif flow_cols:
+            elif column_mapping["flow"]:
                 self.monitor_type = "Flow"
-            elif depth_cols:
+            elif column_mapping["depth"]:
                 self.monitor_type = "Depth"
             else:
                 raise ValueError("Unable to determine monitor type from columns")
 
         self.log_info(f"Monitor type: {self.monitor_type}")
 
-        # Assign extracted columns to column_mapping
-        column_mapping["flow"] = flow_cols
-        column_mapping["velocity"] = velocity_cols
-        column_mapping["rainfall"] = rainfall_cols
-        column_mapping["depth"] = depth_cols
-
         # Set site_id and channel_id based on the determined monitor type
-        if self.monitor_type == "Depth" and depth_cols:
-            depth_col_match = depth_pattern.match(depth_cols[0][0])
+        if self.monitor_type == "Depth" and column_mapping["depth"]:
+            depth_col_match = depth_pattern.match(column_mapping["depth"][0][0])
             if depth_col_match:
                 self.site_id = depth_col_match.group(1)
                 self.channel_id = depth_col_match.group(2)
@@ -337,14 +335,14 @@ class Backend(QObject):
                 self.site_id = "Unknown"
                 self.channel_id = "Unknown"
                 self.log_warning(
-                    "Could not extract site and channel info from depth column name"
+                    "Could not extract site and channel info from depth/level column name"
                 )
-        elif self.monitor_type == "Flow" and flow_cols:
-            self.site_id = flow_cols[0][2]
-            self.channel_id = flow_cols[0][3]
-        elif self.monitor_type == "Rainfall" and rainfall_cols:
-            self.site_id = rainfall_cols[0][2]
-            self.channel_id = rainfall_cols[0][3]
+        elif self.monitor_type == "Flow" and column_mapping["flow"]:
+            self.site_id = column_mapping["flow"][0][2]
+            self.channel_id = column_mapping["flow"][0][3]
+        elif self.monitor_type == "Rainfall" and column_mapping["rainfall"]:
+            self.site_id = column_mapping["rainfall"][0][2]
+            self.channel_id = column_mapping["rainfall"][0][3]
         else:
             self.site_id = "Unknown"
             self.channel_id = "Unknown"
@@ -394,7 +392,7 @@ class Backend(QObject):
 
             if self.site_id:
                 # If we found a site ID, everything after it is potentially the site name
-                site_name_parts = name_parts[name_parts.index(self.site_id) + 1 :]
+                site_name_parts = name_parts[name_parts.index(self.site_id) + 1:]
                 if site_name_parts:
                     self.site_name = " ".join(site_name_parts)
             else:
