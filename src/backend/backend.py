@@ -125,6 +125,10 @@ class Backend(QObject):
             self.logger.error(f"Failed to retrieve login details: {e}")
             return None, None
 
+    def has_valid_credentials(self):
+        username, password = self.get_login_details()
+        return bool(username and password)
+
     @Slot(str, str)
     def download_csv_file(self, site_id: str, folder_path: str) -> None:
         """

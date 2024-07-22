@@ -38,6 +38,7 @@ def validate_credentials(username: str, password: str) -> str:
 
 class LoginPage(QWidget):
     navigate_to_site_details = Signal()
+    login_successful = Signal()
 
     def __init__(self, backend) -> None:
         """
@@ -249,7 +250,7 @@ class LoginPage(QWidget):
                 self.logger.error(f"Validation error: {validation_error}")
             else:
                 self.backend.save_login_details(self.username, self.password)
-                self.navigate_to_site_details.emit()
+                self.login_successful.emit()
         except Exception as e:
             self.logger.error(f"Error in next action: {e}")
             self.error_label.setText("An error occurred. Please try again.")

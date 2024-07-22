@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, QPoint, Slot, Signal, QThread
-from PySide6.QtGui import QPainter, QColor, QPen, QMovie
+from PySide6.QtGui import QPainter, QColor, QPen, QMovie, QFont, QMouseEvent
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -20,9 +20,19 @@ from src.worker.api_worker import Worker
 from src.worker.file_worker import UploadWorker
 
 
+class ClickableLabel(QLabel):
+    clicked = Signal()
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        self.clicked.emit()
+        super().mousePressEvent(event)
+
+
 class SiteDetailsPage(QWidget):
     back_button_clicked = Signal()
     continue_to_next = Signal()
+    login_requested = Signal()
+    open_login_page = Signal()
 
     def __init__(self, backend, stack: QStackedWidget) -> None:
         """
@@ -42,6 +52,7 @@ class SiteDetailsPage(QWidget):
         self.stack = stack
         self.logger = Logger(__name__)
         self.spinner = None
+        self.username_label = None
 
         # Worker thread setup for downloading
         self.worker = Worker(backend)
@@ -74,6 +85,7 @@ class SiteDetailsPage(QWidget):
         self.folder_path = ""
 
         self.init_ui()
+        self.load_saved_credentials()
 
     def init_ui(self) -> None:
         """
@@ -82,6 +94,22 @@ class SiteDetailsPage(QWidget):
         layout = QVBoxLayout()
         layout.setSpacing(10)
         layout.setContentsMargins(20, 20, 20, 20)
+
+        # Welcome section
+        welcome_layout = QHBoxLayout()
+        welcome_text = QLabel("Hello")
+        welcome_text.setStyleSheet("font-size: 18px; font-weight: bold; color: #333;")
+        self.username_label = ClickableLabel("User")  # Use ClickableLabel
+        self.username_label.setStyleSheet(
+            "font-size: 18px; font-weight: bold; color: #3B82F6; text-decoration: underline; cursor: pointer;")
+        self.username_label.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.username_label.clicked.connect(self.open_login_page.emit)  # Connect to new signal
+
+        welcome_layout.addWidget(welcome_text)
+        welcome_layout.addWidget(self.username_label)
+        welcome_layout.addStretch()  # This pushes the welcome message to the left
+
+        layout.addLayout(welcome_layout)
 
         # Site ID Input Section
         site_id_layout = QHBoxLayout()
@@ -290,6 +318,9 @@ class SiteDetailsPage(QWidget):
 
         self.setLayout(layout)
 
+    def update_username(self, username: str):
+        self.username_label.setText(username if username else "User")
+
     def setup_spinners(self):
         """
         setups the spinner animation
@@ -330,6 +361,10 @@ class SiteDetailsPage(QWidget):
         """
         Retrieves site details using the provided site ID.
         """
+        if not self.backend.has_valid_credentials():
+            self.login_requested.emit()
+            return
+
         site_id = self.site_id_input.text().strip()
         if site_id:
             self.open_folder_dialog()
@@ -341,6 +376,21 @@ class SiteDetailsPage(QWidget):
                 self.logger.warning("Folder selection cancelled.")
         else:
             self.logger.warning("Please enter a Site ID.")
+
+    def load_saved_credentials(self):
+        """
+        load credentials from the system
+        """
+        if self.backend.has_valid_credentials():
+            self.logger.info("Saved credentials found.")
+            username, _ = self.backend.get_login_details()
+            if username:
+                self.username_label.setText(username)
+            else:
+                self.username_label.setText("User")
+        else:
+            self.logger.info("No saved credentials found.")
+            self.username_label.setText("User")
 
     def edit_timestamps(self) -> None:
         """
@@ -363,7 +413,7 @@ class SiteDetailsPage(QWidget):
 
     @Slot(str, str, str, str)
     def on_site_details_retrieved(
-        self, site_id, site_name, start_timestamp, end_timestamp
+            self, site_id, site_name, start_timestamp, end_timestamp
     ) -> None:
         """
         Handles the signal when site details are retrieved.
