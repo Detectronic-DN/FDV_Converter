@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, QRect, Signal, Slot, QTimer
-from PySide6.QtGui import QPainter, QColor, QPen, QMovie
+from PySide6.QtGui import QPainter, QColor, QPen, QMovie, QPaintEvent
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QWidget,
@@ -17,10 +17,20 @@ from PySide6.QtWidgets import (
     QStyledItemDelegate,
     QFrame,
 )
+from src.logger.logger import Logger
 
 
 class CustomTabBar(QTabBar):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None) -> None:
+        """
+        Initializes a new instance of the CustomTabBar class.
+
+        Args:
+            parent (QWidget, optional): The parent widget. Defaults to None.
+
+        Returns:
+            None
+        """
         super().__init__(parent)
         self.setDrawBase(False)
         self.setExpanding(False)
@@ -41,7 +51,16 @@ class CustomTabBar(QTabBar):
         """
         )
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QPaintEvent) -> None:
+        """
+        Override the paintEvent method to customize the appearance of the tab bar.
+
+        Args:
+            event (QPaintEvent): The paint event.
+
+        Returns:
+            None
+        """
         painter = QPainter(self)
         option = QStyleOptionTab()
 
@@ -61,7 +80,13 @@ class CustomTabBar(QTabBar):
 
 
 class CustomComboBox(QComboBox):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
+        """
+        CustomComboBox class for styled combobox with SVG arrow.
+
+        Args:
+            parent: The parent widget (default None).
+        """
         super().__init__(parent)
         self.setStyleSheet(
             """
@@ -90,7 +115,6 @@ class CustomComboBox(QComboBox):
             QComboBox QAbstractItemView::item {
                 padding: 5px 10px;
                 color: #333333;
-                
             }
             QComboBox QAbstractItemView::item:hover {
                 background-color: #f0f0f0;
@@ -100,40 +124,40 @@ class CustomComboBox(QComboBox):
                 background-color: #e0e0e0;
                 color: #333333;
             }
-        """
+            """
         )
 
-        # Custom item delegate for hover effect
         delegate = QStyledItemDelegate(self)
         self.setItemDelegate(delegate)
-        # SVG arrow
         self.arrow_svg = """<svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512"> <path 
         d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 
         86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"></path> </svg>"""
         self.svg_renderer = QSvgRenderer(self.arrow_svg.encode("utf-8"))
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
+        """
+        Paint event to draw the styled combobox.
+
+        Args:
+            event: The paint event.
+        """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Draw the background
         if self.view().isVisible() or self.currentIndex() != -1:
             painter.fillRect(self.rect(), QColor("#f0f0f0"))
         else:
             painter.fillRect(self.rect(), QColor("white"))
 
-        # Draw the border
         pen = QPen(QColor("#e0e0e0"))
         pen.setWidth(1)
         painter.setPen(pen)
         painter.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 4, 4)
 
-        # Draw the text
         painter.setPen(QColor("#333333"))
         text_rect = self.rect().adjusted(10, 0, -30, 0)
         painter.drawText(text_rect, Qt.AlignVCenter | Qt.AlignLeft, self.currentText())
 
-        # Draw SVG arrow
         size = 16
         rect = QRect(self.width() - size - 10, (self.height() - size) // 2, size, size)
         self.svg_renderer.render(painter, rect)
@@ -143,36 +167,24 @@ class FDVPage(QWidget):
     back_button_clicked = Signal()
 
     def __init__(self, backend, filepath, site_id, start_timestamp, end_timestamp):
+        """
+        Initializes the FDVPage with the given backend, filepath, site ID, start timestamp, and end timestamp.
+
+        Args:
+            backend: The backend object.
+            filepath: The file path.
+            site_id: The site ID.
+            start_timestamp: The start timestamp.
+            end_timestamp: The end timestamp.
+        """
         super().__init__()
-        self.rainfall_totals_button = None
-        self.isBusy = None
-        self.back_button = None
-        self.use_r3_button = None
-        self.calculate_r3_button = None
-        self.r3_value_field = None
-        self.create_rainfall_button = None
-        self.pipe_width_field = None
-        self.pipe_height_field = None
-        self.egg_type_combo_box = None
-        self.rainfall_logs_display = None
-        self.rainfall_column_combo_box = None
-        self.rainfall_site_name_field = None
-        self.fdv_logs_display = None
-        self.create_fdv_button = None
-        self.interim_reports_button = None
-        self.pipe_size_field = None
-        self.pipe_shape_combo_box = None
-        self.velocity_column_combo_box = None
-        self.depth_column_combo_box = None
-        self.site_name_field = None
-        self.tab_widget = None
         self.backend = backend
         self.filepath = filepath
         self.site_id = site_id
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
         self.spinner = None
-        self.setup_spinners()
+        self.logger = Logger(__name__)
 
         self.selected_depth_column = ""
         self.selected_velocity_column = ""
@@ -195,9 +207,25 @@ class FDVPage(QWidget):
         self.spinner.hide()
 
     def init_ui(self):
+        """
+        Initializes the user interface with a tab widget containing three tabs: "FDV Converter", "Rainfall", and "R3 Calculator".
+
+        The "FDV Converter" tab contains various input fields and buttons for converting FDV data. It includes fields for site name, depth column, velocity column, pipe shape, pipe size, and buttons for creating interim reports and generating the FDV file. The logs display section shows the FDV logs.
+
+        The "Rainfall" tab contains input fields and buttons for generating rainfall data. It includes fields for site name, rainfall column, and buttons for creating rainfall and generating rainfall totals. The logs display section shows the rainfall logs.
+
+        The "R3 Calculator" tab contains input fields and buttons for calculating the R3 value. It includes fields for egg type, pipe width, pipe height, and buttons for calculating R3 and using R3 in the FDV file.
+
+        The styling for both buttons is updated in the init_ui method.
+
+        Parameters:
+            self (object): The instance of the class.
+
+        Returns:
+            None
+        """
         layout = QVBoxLayout(self)
 
-        # Tab Widget
         self.tab_widget = QTabWidget()
         self.tab_widget.setTabBar(CustomTabBar())
         self.tab_widget.setStyleSheet(
@@ -206,7 +234,7 @@ class FDVPage(QWidget):
                 border-top: 1px solid #d0d0d0;
                 background-color: white;
             }
-        """
+            """
         )
 
         # FDV Converter Tab
@@ -257,22 +285,7 @@ class FDVPage(QWidget):
 
         fdv_layout.addWidget(QLabel("Pipe Size:"), 4, 0)
         self.pipe_size_field = QLineEdit()
-        self.pipe_size_field.setStyleSheet(
-            """
-            QLineEdit {
-                padding: 10px;
-                background-color: #F3F4F6;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            QLineEdit:focus {
-                background-color: #E5E7EB;
-                outline: none;
-                border: 1px solid #3B82F6;
-            }
-            """
-        )
+        self.pipe_size_field.setStyleSheet(self.site_name_field.styleSheet())
         fdv_layout.addWidget(self.pipe_size_field, 4, 1)
 
         self.interim_reports_button = QPushButton("Interim Reports")
@@ -288,7 +301,7 @@ class FDVPage(QWidget):
             QPushButton:hover {
                 background-color: #469b61;
             }
-        """
+            """
         )
         self.interim_reports_button.clicked.connect(self.backend.create_interim_reports)
         fdv_layout.addWidget(self.interim_reports_button, 5, 0)
@@ -310,56 +323,13 @@ class FDVPage(QWidget):
             QPushButton:hover {
                 background-color: #368f81;
             }
-        """
+            """
         )
         self.create_fdv_button.clicked.connect(self.create_fdv)
         fdv_layout.addWidget(self.create_fdv_button, 5, 1)
-        self.spinner.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        fdv_layout.addWidget(self.spinner)
-        fdv_layout.setAlignment(self.spinner, Qt.AlignmentFlag.AlignCenter)
-        # Logs Display Section
-        logs_frame = QFrame()
-        logs_frame.setObjectName("logsFrame")
-        logs_frame.setStyleSheet(
-            """
-            #logsFrame {
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-            }
-        """
-        )
-        logs_layout = QVBoxLayout(logs_frame)
-        logs_label = QLabel("FDV Logs")
-        logs_label.setStyleSheet(
-            """
-            font-size: 14px;
-            color: #374151;
-            margin-bottom: 5px;
-        """
-        )
-        logs_layout.addWidget(logs_label)
 
-        fdv_layout.addWidget(logs_label, 6, 0)
-        self.fdv_logs_display = QTextEdit()
-        self.fdv_logs_display.setReadOnly(True)
-        self.fdv_logs_display.setPlaceholderText("No FDV file created yet")
-        self.fdv_logs_display.setStyleSheet(
-            """
-                    QTextEdit {
-                        border: 1px solid #e5e7eb;
-                        border-radius: 4px;
-                        background-color: white;
-                        padding: 8px;
-                        font-family: monospace;
-                        font-size: 12px;
-                    }
-                """
-        )
-
-        fdv_scroll_area = QScrollArea()
-        fdv_scroll_area.setWidgetResizable(True)
-        fdv_scroll_area.setWidget(self.fdv_logs_display)
-        fdv_layout.addWidget(fdv_scroll_area, 7, 0, 1, 2)
+        self.setup_spinners()
+        fdv_layout.addWidget(self.spinner, 6, 0, 1, 2, alignment=Qt.AlignCenter)
 
         fdv_tab.setLayout(fdv_layout)
         self.tab_widget.addTab(fdv_tab, "FDV Converter")
@@ -370,22 +340,7 @@ class FDVPage(QWidget):
 
         rainfall_layout.addWidget(QLabel("Site Name:"), 0, 0)
         self.rainfall_site_name_field = QLineEdit(self.site_id)
-        self.rainfall_site_name_field.setStyleSheet(
-            """
-            QLineEdit {
-                padding: 10px;
-                background-color: #F3F4F6;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            QLineEdit:focus {
-                background-color: #E5E7EB;
-                outline: none;
-                border: 1px solid #3B82F6;
-            }
-            """
-        )
+        self.rainfall_site_name_field.setStyleSheet(self.site_name_field.styleSheet())
         self.rainfall_site_name_field.setReadOnly(True)
         rainfall_layout.addWidget(self.rainfall_site_name_field, 0, 1)
 
@@ -394,63 +349,13 @@ class FDVPage(QWidget):
         rainfall_layout.addWidget(self.rainfall_column_combo_box, 1, 1)
 
         self.create_rainfall_button = QPushButton("Create Rainfall")
-        self.create_rainfall_button.setStyleSheet(
-            """
-            QPushButton {
-                padding: 10px 20px;
-                border-radius: 8px;
-                border: none;
-                font-size: 16px;
-                font-weight: 500;
-                color: #FFFFFF;
-                text-align: center;
-                position: relative;
-                cursor: pointer;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                            stop:0 #2980b9,
-                                            stop:1 #2c3e50);
-            }
-            QPushButton::before {
-                content: "";
-                position: absolute;
-                left: 0;
-                top: 0;
-                height: 100%;
-                width: 100%;
-                border-radius: 8px;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                            stop:0 rgba(41, 128, 185, 0.5),
-                                            stop:1 rgba(44, 62, 80, 0.5));
-                z-index: -1;
-            }
-            QPushButton::after {
-                content: "";
-                position: absolute;
-                left: 1px;
-                top: 1px;
-                right: 1px;
-                bottom: 1px;
-                border-radius: 7px;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                            stop:0 rgba(52, 152, 219, 0.1),
-                                            stop:1 rgba(44, 62, 80, 0.1));
-                border: 1px solid rgba(41, 128, 185, 0.3);
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                            stop:0 #3498db,
-                                            stop:1 #34495e);
-            }
-        """
-        )
+        self.create_rainfall_button.setStyleSheet(self.create_fdv_button.styleSheet())
         self.create_rainfall_button.clicked.connect(self.create_rainfall)
         rainfall_layout.addWidget(self.create_rainfall_button, 2, 1)
-        rainfall_layout.addWidget(self.spinner)
-        rainfall_layout.setAlignment(self.spinner, Qt.AlignmentFlag.AlignCenter)
 
-        # create totals button
         self.rainfall_totals_button = QPushButton("Generate Rainfall Totals")
-        self.rainfall_totals_button.setStyleSheet("""
+        self.rainfall_totals_button.setStyleSheet(
+            """
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
@@ -461,51 +366,10 @@ class FDVPage(QWidget):
             QPushButton:hover {
                 background-color: #45a049;
             }
-        """)
+            """
+        )
         self.rainfall_totals_button.clicked.connect(self.generate_rainfall_totals)
         rainfall_layout.addWidget(self.rainfall_totals_button, 2, 0)
-        # Logs Display Section
-        logs_frame = QFrame()
-        logs_frame.setObjectName("logsFrame")
-        logs_frame.setStyleSheet(
-            """
-            #logsFrame {
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-            }
-        """
-        )
-        logs_layout = QVBoxLayout(logs_frame)
-        rainfall_logs_label = QLabel("Rainfall Logs")
-        rainfall_logs_label.setStyleSheet(
-            """
-            font-size: 14px;
-            color: #374151;
-            margin-bottom: 5px;
-        """
-        )
-        logs_layout.addWidget(rainfall_logs_label)
-        rainfall_layout.addWidget(rainfall_logs_label, 3, 0)
-
-        self.rainfall_logs_display = QTextEdit()
-        self.rainfall_logs_display.setReadOnly(True)
-        self.rainfall_logs_display.setPlaceholderText("No Rainfall file created yet")
-        self.rainfall_logs_display.setStyleSheet(
-            """
-            QTextEdit {
-                border: 1px solid #e5e7eb;
-                border-radius: 4px;
-                background-color: white;
-                padding: 8px;
-                font-family: monospace;
-                font-size: 12px;
-            }
-            """
-        )
-        rainfall_scroll_area = QScrollArea()
-        rainfall_scroll_area.setWidgetResizable(True)
-        rainfall_scroll_area.setWidget(self.rainfall_logs_display)
-        rainfall_layout.addWidget(rainfall_scroll_area, 4, 0, 1, 2)
 
         rainfall_tab.setLayout(rainfall_layout)
         self.tab_widget.addTab(rainfall_tab, "Rainfall")
@@ -521,67 +385,19 @@ class FDVPage(QWidget):
 
         r3_layout.addWidget(QLabel("Pipe Width (mm):"), 1, 0)
         self.pipe_width_field = QLineEdit()
-        self.pipe_width_field.setStyleSheet(
-            """
-            QLineEdit {
-                padding: 10px;
-                background-color: #F3F4F6;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            QLineEdit:focus {
-                background-color: #E5E7EB;
-                outline: none;
-                border: 1px solid #3B82F6;
-            }
-            """
-        )
+        self.pipe_width_field.setStyleSheet(self.site_name_field.styleSheet())
         r3_layout.addWidget(self.pipe_width_field, 1, 1)
 
         r3_layout.addWidget(QLabel("Pipe Height (mm):"), 2, 0)
         self.pipe_height_field = QLineEdit()
-        self.pipe_height_field.setStyleSheet(
-            """
-            QLineEdit {
-                padding: 10px;
-                background-color: #F3F4F6;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            QLineEdit:focus {
-                background-color: #E5E7EB;
-                outline: none;
-                border: 1px solid #3B82F6;
-            }
-            """
-        )
+        self.pipe_height_field.setStyleSheet(self.site_name_field.styleSheet())
         r3_layout.addWidget(self.pipe_height_field, 2, 1)
 
         r3_layout.addWidget(QLabel("R3 Value (mm):"), 3, 0)
         self.r3_value_field = QLineEdit()
-        self.r3_value_field.setStyleSheet(
-            """
-            QLineEdit {
-                padding: 10px;
-                background-color: #F3F4F6;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            QLineEdit:focus {
-                background-color: #E5E7EB;
-                outline: none;
-                border: 1px solid #3B82F6;
-            }
-            """
-        )
-
+        self.r3_value_field.setStyleSheet(self.site_name_field.styleSheet())
         self.r3_value_field.setReadOnly(True)
         r3_layout.addWidget(self.r3_value_field, 3, 1)
-
-        # In the init_ui method, update the styling for both buttons
 
         button_style = """
             QPushButton {
@@ -605,6 +421,7 @@ class FDVPage(QWidget):
         self.use_r3_button.setStyleSheet(button_style)
         self.use_r3_button.clicked.connect(self.use_r3_in_fdv)
         r3_layout.addWidget(self.use_r3_button, 4, 1)
+
         r3_calculator_tab.setLayout(r3_layout)
         self.tab_widget.addTab(r3_calculator_tab, "R3 Calculator")
 
@@ -613,22 +430,31 @@ class FDVPage(QWidget):
         self.back_button = QPushButton("Back")
         self.back_button.setStyleSheet(
             """
-                    QPushButton {
-                        background-color: #a0aec0;
-                        color: #1a202c;
-                        border: none;
-                        padding: 10px 20px;
-                        border-radius: 8px;
-                    }
-                    QPushButton:hover {
-                        background-color: #718096;
-                    }
-                """
+            QPushButton {
+                background-color: #a0aec0;
+                color: #1a202c;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #718096;
+            }
+            """
         )
         self.back_button.clicked.connect(self.on_back_button_clicked)
         layout.addWidget(self.back_button)
 
     def update_site_info(self, site_id, start_timestamp, end_timestamp):
+        self.site_id = site_id
+        """
+        Updates the site information with the provided site ID, start timestamp, and end timestamp.
+        
+        Args:
+            site_id: The ID of the site.
+            start_timestamp: The start timestamp.
+            end_timestamp: The end timestamp.
+        """
         self.site_id = site_id
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
@@ -636,17 +462,20 @@ class FDVPage(QWidget):
         self.rainfall_site_name_field.setText(site_id)
 
     def setup_connections(self):
-        # Connect backend signals to the appropriate slots
-        self.backend.columnsRetrieved.connect(self.on_columns_retrieved)
-        self.backend.logMessage.connect(self.on_log_message)
-        self.backend.fdvCreated.connect(self.on_fdv_created)
-        self.backend.fdvError.connect(self.on_fdv_error)
-        self.backend.interimReportCreated.connect(self.on_interim_report_created)
-        self.backend.rainfallCreated.connect(self.on_rainfall_created)
-        self.backend.rainfallError.connect(self.on_rainfall_error)
-        self.backend.errorOccurred.connect(self.on_error_occurred)
+        """
+        Connects the backend signals to the appropriate slots.
 
-        # Connect UI element signals to the appropriate slots
+        This function sets up the connections between the backend signals and the corresponding slots in the FDVPage.
+        It connects the `columnsRetrieved` signal from the backend to the `on_columns_retrieved` slot, the `busyChanged` signal to the `on_busy_changed` slot, and the `currentIndexChanged` signals from the `depth_column_combo_box`, `velocity_column_combo_box`, and `rainfall_column_combo_box` to their respective slots.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
+        self.backend.columnsRetrieved.connect(self.on_columns_retrieved)
+        self.backend.busyChanged.connect(self.on_busy_changed)
         self.depth_column_combo_box.currentIndexChanged.connect(
             self.on_depth_column_selected
         )
@@ -658,6 +487,15 @@ class FDVPage(QWidget):
         )
 
     def on_columns_retrieved(self, columns):
+        """
+        Updates the columns in the UI based on the retrieved column names.
+
+        Args:
+            columns: A list of column names to be displayed in the combo boxes.
+
+        Returns:
+            None
+        """
         self.depth_column_combo_box.clear()
         self.velocity_column_combo_box.clear()
         self.rainfall_column_combo_box.clear()
@@ -689,56 +527,70 @@ class FDVPage(QWidget):
             if index != -1:
                 self.rainfall_column_combo_box.setCurrentIndex(index)
 
-    def on_log_message(self, message):
-        self.fdv_logs_display.append(message)
-
-    def on_fdv_created(self, message):
-        self.fdv_logs_display.append(message)
-
-    def on_fdv_error(self, error_message):
-        self.fdv_logs_display.append(error_message)
-
-    def on_interim_report_created(self, message):
-        self.fdv_logs_display.append(message)
-
-    def on_rainfall_created(self, message):
-        self.rainfall_logs_display.append(message)
-
-    def on_rainfall_error(self, error_message):
-        self.rainfall_logs_display.append(error_message)
-
-    def on_error_occurred(self, error_message):
-        self.fdv_logs_display.append(error_message)
-
     def on_depth_column_selected(self):
+        """
+        Assigns the current text of the depth column combo box to the selected_depth_column attribute.
+        """
         self.selected_depth_column = self.depth_column_combo_box.currentText()
 
     def on_velocity_column_selected(self):
+        """
+        Sets the `selected_velocity_column` attribute to the current text of the `velocity_column_combo_box`.
+
+        This function is called when the user selects a new item in the `velocity_column_combo_box`. It retrieves the current text of the combo box and assigns it to the `selected_velocity_column` attribute.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
         self.selected_velocity_column = self.velocity_column_combo_box.currentText()
 
     def on_rainfall_column_selected(self):
+        """
+        Sets the selected rainfall column based on the current text of the rainfall column combo box.
+
+        This function retrieves the current text of the `rainfall_column_combo_box` and assigns it to the `selected_rainfall_column` attribute.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
         self.selected_rainfall_column = self.rainfall_column_combo_box.currentText()
 
     @Slot(bool)
     def on_busy_changed(self, is_busy):
         """
-        Handles the signal when the busy state changes.
+        A function that handles the change in the busy state.
+
+        Parameters:
+            is_busy (bool): A boolean indicating whether the application is in a busy state.
+
+        Returns:
+            None
         """
-        self.isBusy = is_busy
         if is_busy:
-            message = "Processing, please wait..."
-            self.fdv_logs_display.append(message)
-            self.rainfall_logs_display.append(message)
+            self.logger.info("Processing, please wait...")
             self.spinner.show()
             self.disable_buttons()
         else:
-            message = "Processing complete."
-            self.fdv_logs_display.append(message)
-            self.rainfall_logs_display.append(message)
+            self.logger.info("Processing complete.")
             self.spinner.hide()
             self.enable_buttons()
 
     def create_fdv(self):
+        """
+        A function that initiates the creation of an FDV file by setting up necessary parameters and triggering the FDV file creation process.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
         self.on_busy_changed(True)
         depth_column = (
             "" if self.selected_depth_column == "None" else self.selected_depth_column
@@ -748,12 +600,7 @@ class FDVPage(QWidget):
             if self.selected_velocity_column == "None"
             else self.selected_velocity_column
         )
-
-        if self.pipe_size_field.text() is None or self.pipe_size_field.text() == "":
-            pipe_size_param = 0
-
-        else:
-            pipe_size_param = self.pipe_size_field.text()
+        pipe_size_param = self.pipe_size_field.text() or "0"
 
         QTimer.singleShot(
             100,
@@ -769,6 +616,9 @@ class FDVPage(QWidget):
     def perform_fdv_creation(
         self, site_name, pipe_shape, pipe_size, depth_column, velocity_column
     ):
+        """
+        A function that creates an FDV file by calling the backend to generate the file based on the provided site name, pipe shape, pipe size, depth column, and velocity column.
+        """
         try:
             self.backend.create_fdv(
                 site_name, pipe_shape, pipe_size, depth_column, velocity_column
@@ -777,22 +627,43 @@ class FDVPage(QWidget):
             self.on_busy_changed(False)
 
     def create_rainfall(self):
+        """
+        A function that triggers the creation of rainfall data by calling perform_rainfall_creation with the site ID and selected rainfall column after setting the busy state.
+        """
         self.on_busy_changed(True)
-        QTimer.singleShot(100, lambda: self.perform_rainfall_creation(
-            self.site_id,
-            self.selected_rainfall_column
-        ))
+        QTimer.singleShot(
+            100,
+            lambda: self.perform_rainfall_creation(
+                self.site_id, self.selected_rainfall_column
+            ),
+        )
 
     def perform_rainfall_creation(self, site_id, rainfall_column):
+        """
+        A function that initiates the creation of rainfall data by calling the backend to create rainfall based on the provided site ID and rainfall column after setting the busy state.
+
+        Parameters:
+            site_id: The ID of the site for which rainfall data is to be created.
+            rainfall_column: The column containing rainfall data.
+
+        Returns:
+            None
+        """
         try:
             self.backend.create_rainfall(site_id, rainfall_column)
         finally:
             self.on_busy_changed(False)
 
     def generate_rainfall_totals(self):
+        """
+        A function that generates rainfall totals by calling the backend to generate the totals.
+        """
         self.backend.generate_rainfall_totals()
 
     def calculate_r3(self):
+        """
+        A function that calculates the R3 value based on the provided width, height, and egg type, and updates the R3 value field with the calculated value formatted to two decimal places.
+        """
         width = float(self.pipe_width_field.text())
         height = float(self.pipe_height_field.text())
         egg_type = self.egg_type_combo_box.currentText()
@@ -800,16 +671,45 @@ class FDVPage(QWidget):
         self.r3_value_field.setText(f"{r3_value:.2f}")
 
     def use_r3_in_fdv(self):
+        """
+        Set the pipe size in the `pipe_size_field` based on the values entered in `pipe_width_field`, `pipe_height_field`, and `r3_value_field`.
+        Switch to the first tab in `tab_widget`.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+        """
         pipe_size = f"{self.pipe_width_field.text()},{self.pipe_height_field.text()},{self.r3_value_field.text()}"
         self.pipe_size_field.setText(pipe_size)
         self.tab_widget.setCurrentIndex(0)
 
     def on_back_button_clicked(self):
+        """
+        Emits the `back_button_clicked` signal when the back button is clicked.
+
+        This function does not take any parameters.
+
+        This function does not return anything.
+        """
         self.back_button_clicked.emit()
-        self.fdv_logs_display.clear()
-        self.rainfall_logs_display.clear()
 
     def disable_buttons(self):
+        """
+        Disables all the buttons on the UI.
+
+        This function sets the enabled state of all the buttons on the UI to False.
+        This is useful when you want to disable all the buttons on the UI, for example,
+        when you want to prevent the user from interacting with the UI while a certain
+        operation is being performed.
+
+        Parameters:
+            self (object): The instance of the class.
+
+        Returns:
+            None
+        """
         self.create_fdv_button.setEnabled(False)
         self.create_rainfall_button.setEnabled(False)
         self.use_r3_button.setEnabled(False)
@@ -818,6 +718,9 @@ class FDVPage(QWidget):
         self.back_button.setEnabled(False)
 
     def enable_buttons(self):
+        """
+        Enable all buttons on the UI by setting their enabled status to True.
+        """
         self.create_fdv_button.setEnabled(True)
         self.create_rainfall_button.setEnabled(True)
         self.use_r3_button.setEnabled(True)

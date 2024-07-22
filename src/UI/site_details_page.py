@@ -1,5 +1,4 @@
-from PySide6.QtCore import Qt, QPoint
-from PySide6.QtCore import Signal, Slot, QThread
+from PySide6.QtCore import Qt, QPoint, Slot, Signal, QThread
 from PySide6.QtGui import QPainter, QColor, QPen, QMovie
 from PySide6.QtWidgets import (
     QWidget,
@@ -41,7 +40,7 @@ class SiteDetailsPage(QWidget):
         self.site_id_input = None
         self.backend = backend
         self.stack = stack
-        self.logger = Logger(__name__, emit_func=self.append_log)
+        self.logger = Logger(__name__)
         self.spinner = None
 
         # Worker thread setup for downloading
@@ -51,7 +50,6 @@ class SiteDetailsPage(QWidget):
         self.worker.moveToThread(self.worker_thread)
         self.worker_thread.start()
 
-        self.worker.logMessage.connect(self.on_log_message)
         self.worker.siteDetailsRetrieved.connect(self.on_site_details_retrieved)
         self.worker.errorOccurred.connect(self.on_error_occurred)
         self.worker.busyChanged.connect(self.on_busy_changed)
@@ -60,11 +58,9 @@ class SiteDetailsPage(QWidget):
         self.upload_worker = UploadWorker(backend)
         self.upload_worker_thread = QThread()
         self.upload_worker_thread.quit()
-
         self.upload_worker.moveToThread(self.upload_worker_thread)
         self.upload_worker_thread.start()
 
-        self.upload_worker.logMessage.connect(self.on_log_message)
         self.upload_worker.siteDetailsRetrieved.connect(self.on_site_details_retrieved)
         self.upload_worker.errorOccurred.connect(self.on_error_occurred)
         self.upload_worker.busyChanged.connect(self.on_busy_changed)
@@ -292,46 +288,6 @@ class SiteDetailsPage(QWidget):
         )
         layout.addLayout(back_button_layout)
 
-        # Logs Display Section
-        logs_frame = QFrame()
-        logs_frame.setObjectName("logsFrame")
-        logs_frame.setStyleSheet(
-            """
-            #logsFrame {
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-            }
-        """
-        )
-        logs_layout = QVBoxLayout(logs_frame)
-        logs_label = QLabel("Logs")
-        logs_label.setStyleSheet(
-            """
-            font-size: 14px;
-            color: #374151;
-            margin-bottom: 5px;
-        """
-        )
-        self.logs_display = QTextEdit()
-
-        self.logs_display.setPlaceholderText("No logs available")
-        self.logs_display.setReadOnly(True)
-        self.logs_display.setStyleSheet(
-            """
-                    QTextEdit {
-                        border: 1px solid #e5e7eb;
-                        border-radius: 4px;
-                        background-color: white;
-                        padding: 8px;
-                        font-family: monospace;
-                        font-size: 12px;
-                    }
-                """
-        )
-        logs_layout.addWidget(logs_label)
-        logs_layout.addWidget(self.logs_display)
-        layout.addWidget(logs_frame)
-        layout.addLayout(logs_layout)
         self.setLayout(layout)
 
     def setup_spinners(self):
@@ -427,14 +383,7 @@ class SiteDetailsPage(QWidget):
         """
         Handles the signal when an error occurs.
         """
-        self.logs_display.append(error_message)
-
-    @Slot(str)
-    def on_log_message(self, msg) -> None:
-        """
-        Handles the signal for log messages.
-        """
-        self.logs_display.append(msg)
+        self.logger.error(error_message)
 
     @Slot(bool)
     def on_busy_changed(self, is_busy) -> None:
@@ -443,19 +392,13 @@ class SiteDetailsPage(QWidget):
         """
         self.isBusy = is_busy
         if is_busy:
-            self.logs_display.append("Processing, please wait...")
+            self.logger.info("Processing, please wait...")
             self.spinner.show()
             self.disable_buttons()
         else:
-            self.logs_display.append("Processing complete.")
+            self.logger.info("Processing complete.")
             self.spinner.hide()
             self.enable_buttons()
-
-    def append_log(self, log_message: str):
-        """
-        Appends a log message to the logs display.
-        """
-        self.logs_display.append(log_message)
 
     def close_threads(self):
         """Closes the worker threads gracefully."""
@@ -464,12 +407,6 @@ class SiteDetailsPage(QWidget):
 
         self.upload_worker_thread.quit()
         self.upload_worker_thread.wait()
-
-    def clear_logs(self) -> None:
-        """
-        Clears the logs display widget.
-        """
-        self.logs_display.clear()
 
     def clear_site_details(self):
         self.site_id_label.setText("Site ID: ")
