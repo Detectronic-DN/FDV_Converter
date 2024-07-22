@@ -37,11 +37,13 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.backend = Backend()
 
-        self.login_page = LoginPage(self.backend)
+        # Create pages
         self.site_details_page = SiteDetailsPage(self.backend, self.stack)
-        self.site_details_page.open_login_page.connect(self.show_login_page)
+        self.login_page = LoginPage(self.backend)
 
+        # Add pages to the stack
         self.stack.addWidget(self.site_details_page)
+        self.stack.addWidget(self.login_page)
         self.stack.setCurrentWidget(self.site_details_page)
 
         # Add the stack to the splitter
@@ -63,7 +65,9 @@ class MainWindow(QMainWindow):
 
         # Connect signals to slots
         self.site_details_page.login_requested.connect(self.show_login_page)
+        self.site_details_page.open_login_page.connect(self.show_login_page)
         self.login_page.login_successful.connect(self.show_site_details_page)
+        self.login_page.navigate_to_site_details.connect(self.show_site_details_page)
         self.site_details_page.back_button_clicked.connect(self.show_login_page)
         self.site_details_page.continue_to_next.connect(self.show_fdv_page)
 
@@ -93,6 +97,7 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentWidget(self.site_details_page)
         username, _ = self.backend.get_login_details()
         self.site_details_page.update_username(username)
+        self.set_log_visibility(True)
 
     def show_login_page(self) -> None:
         """
@@ -101,6 +106,7 @@ class MainWindow(QMainWindow):
         if self.login_page not in [self.stack.widget(i) for i in range(self.stack.count())]:
             self.stack.addWidget(self.login_page)
         self.stack.setCurrentWidget(self.login_page)
+        self.set_log_visibility(False)
 
     def show_fdv_page(self) -> None:
         """
@@ -116,6 +122,7 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(fdv_page)
         self.stack.setCurrentWidget(fdv_page)
         fdv_page.back_button_clicked.connect(self.show_site_details_page)
+        self.set_log_visibility(True)
 
     def closeEvent(self, event) -> None:
         """
@@ -131,11 +138,8 @@ class MainWindow(QMainWindow):
         self.backend.clear_login_details()  # Ensure login details are cleared
         self.site_details_page.close_threads()
 
-    def toggle_log_visibility(self):
+    def set_log_visibility(self, visible: bool) -> None:
         """
-        Toggles the visibility of the log widget.
+        Sets the visibility of the log widget.
         """
-        if self.log_widget.isVisible():
-            self.log_widget.hide()
-        else:
-            self.log_widget.show()
+        self.log_widget.setVisible(visible)

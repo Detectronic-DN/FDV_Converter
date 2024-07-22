@@ -1,15 +1,15 @@
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
-    QHBoxLayout,
     QCheckBox,
-    QSpacerItem,
     QSizePolicy,
     QFrame,
+    QSpacerItem,
 )
 
 from src.logger.logger import Logger
@@ -65,69 +65,71 @@ class LoginPage(QWidget):
         Initializes the UI components of the login page.
         """
         self.setWindowTitle("Login")
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Create a spacer item for top and bottom
-        top_spacer = QSpacerItem(
-            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
-        )
-        bottom_spacer = QSpacerItem(
-            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
-        )
-
-        # Add top spacer to the layout
-        layout.addItem(top_spacer)
-
         # Create the frame for the login form without visible borders
-
         self.login_frame.setFrameShape(QFrame.Shape.NoFrame)
-        self.login_frame.setFixedSize(400, 350)
+        self.login_frame.setFixedSize(500, 400)
         self.login_frame.setObjectName("loginFrame")
 
         form_layout = QVBoxLayout(self.login_frame)
-        form_layout.setContentsMargins(20, 20, 20, 20)
+        form_layout.setContentsMargins(30, 30, 30, 30)
         form_layout.setSpacing(15)
 
-        # title
-        title_label = QLabel("DD-EN Login")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #111827;")
-        form_layout.addWidget(title_label)
+        close_button = QPushButton("×")
+        close_button.setStyleSheet("""
+                    QPushButton {
+                        background-color: transparent;
+                        color: #888;
+                        font-size: 20px;
+                        font-weight: bold;
+                        border: none;
+                    }
+                    QPushButton:hover {
+                        color: #333;
+                    }
+                """)
+        close_button.clicked.connect(self.navigate_to_site_details.emit)
+        form_layout.addWidget(close_button, 0, Qt.AlignRight)
 
-        # Username
-        username_label = QLabel("Enter Username:")
-        username_label.setStyleSheet("font-size: 14px; font-weight: bold;")
-        self.username_input.setPlaceholderText("Username")
-        self.username_input.setStyleSheet(
-            """
-            QLineEdit {
-                padding: 10px;
-                background-color: #F3F4F6;
-                border: none;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            QLineEdit:focus {
-                background-color: #E5E7EB;
-                outline: none;
-                border: 1px solid #3B82F6;
-            }
-            """
+        # Logo
+        logo_label = QLabel()
+        logo_pixmap = QPixmap(
+            "icons/Detectronic-logo.png"
         )
-        self.username_input.textChanged.connect(self.clear_error)
-        form_layout.addWidget(username_label)
-        form_layout.addWidget(self.username_input)
+        logo_label.setPixmap(
+            logo_pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        )
+        logo_label.setAlignment(Qt.AlignCenter)
+        form_layout.addWidget(logo_label)
 
-        # Password
-        password_label = QLabel("Enter Password:")
-        password_label.setStyleSheet("font-size: 14px; font-weight: bold; ")
+        # Welcome text
+        welcome_label = QLabel("Welcome back")
+        welcome_label.setAlignment(Qt.AlignCenter)
+        welcome_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333;")
+        form_layout.addWidget(welcome_label)
+
+        self.username_input.setPlaceholderText("Username")
         self.password_input.setPlaceholderText("Password")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password_input.setStyleSheet(self.username_input.styleSheet())
-        self.password_input.textChanged.connect(self.clear_error)
-        form_layout.addWidget(password_label)
-        form_layout.addWidget(self.password_input)
+
+        for input_field in (self.username_input, self.password_input):
+            input_field.setStyleSheet("""
+                        QLineEdit {
+                            padding: 10px;
+                            background-color: #F3F4F6;
+                            border: none;
+                            border-radius: 6px;
+                            font-size: 14px;
+                        }
+                        QLineEdit:focus {
+                            background-color: #E5E7EB;
+                            outline: none;
+                            border: 1px solid #3B82F6;
+                        }
+                    """)
+            form_layout.addWidget(input_field)
 
         # Show Password Checkbox
         self.show_password_checkbox = QCheckBox("Show Password")
@@ -165,9 +167,7 @@ class LoginPage(QWidget):
         form_layout.addWidget(self.error_label)
 
         # Buttons for further actions
-        buttons_layout = QHBoxLayout()
-        skip_button = QPushButton("Skip")
-        next_button = QPushButton("Submit")
+        next_button = QPushButton("Log In")
         next_button.setStyleSheet(
             """
             QPushButton {
@@ -183,23 +183,14 @@ class LoginPage(QWidget):
             }
             """
         )
-        skip_button.setStyleSheet(next_button.styleSheet())
-        buttons_layout.addWidget(skip_button)
-        buttons_layout.addWidget(next_button)
+        next_button.clicked.connect(self.login)
 
-        form_layout.addLayout(buttons_layout)
+        form_layout.addWidget(next_button)
 
         # Add the form layout to the login frame
-        layout.addWidget(self.login_frame, 0, Qt.AlignmentFlag.AlignCenter)
-
-        # Add bottom spacer to the layout
-        layout.addItem(bottom_spacer)
-
-        self.setLayout(layout)
-
-        # Connections
-        skip_button.clicked.connect(self.skip)
-        next_button.clicked.connect(self.next)
+        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        layout.addWidget(self.login_frame, 0, Qt.AlignCenter)
+        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
     def connect_signals(self) -> None:
         """
@@ -228,14 +219,7 @@ class LoginPage(QWidget):
         self.error_label.setText("")
         self.error_label.setVisible(False)
 
-    def skip(self) -> None:
-        """
-        Handles the skip action.
-        """
-        self.logger.info("Skipped")
-        self.navigate_to_site_details.emit()
-
-    def next(self) -> None:
+    def login(self) -> None:
         """
         Handles the next action, including validation and saving login details.
         """
@@ -273,10 +257,7 @@ class LoginPage(QWidget):
         """
         Handles changes to the busy state.
         """
-        if is_busy:
-            self.setEnabled(False)
-        else:
-            self.setEnabled(True)
+        self.setEnabled(not is_busy)
 
     def on_login_success(self) -> None:
         """
