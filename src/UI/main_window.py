@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
         self.setWindowTitle("FDV App")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 640, 480)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)

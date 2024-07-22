@@ -3,7 +3,6 @@ from PySide6.QtCore import QObject, Signal, Slot
 
 class UploadWorker(QObject):
     upload_csv_file = Signal(str)
-    logMessage = Signal(str)
     siteDetailsRetrieved = Signal(str, str, str, str)
     errorOccurred = Signal(str)
     busyChanged = Signal(bool)
@@ -25,14 +24,12 @@ class UploadWorker(QObject):
 
     def _connect_signals(self):
         if not self._connections_made:
-            self.backend.logMessage.connect(self.logMessage.emit)
             self.backend.siteDetailsRetrieved.connect(self.siteDetailsRetrieved.emit)
             self.backend.errorOccurred.connect(self.errorOccurred.emit)
             self._connections_made = True
 
     def connect_signals(self):
         if not self._connections_made:
-            self.backend.logMessage.connect(self.logMessage.emit)
             self.backend.siteDetailsRetrieved.connect(self.siteDetailsRetrieved.emit)
             self.backend.errorOccurred.connect(self.errorOccurred.emit)
             self._connections_made = True

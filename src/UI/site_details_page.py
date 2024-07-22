@@ -360,7 +360,6 @@ class SiteDetailsPage(QWidget):
         """Handles the back button click event."""
         self.back_button_clicked.emit()
         self.close_threads()
-        self.logs_display.clear()
 
     @Slot(str, str, str, str)
     def on_site_details_retrieved(

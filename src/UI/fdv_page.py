@@ -9,14 +9,12 @@ from PySide6.QtWidgets import (
     QPushButton,
     QComboBox,
     QGridLayout,
-    QScrollArea,
-    QTextEdit,
     QTabWidget,
     QTabBar,
     QStyleOptionTab,
     QStyledItemDelegate,
-    QFrame,
 )
+
 from src.logger.logger import Logger
 
 
@@ -614,7 +612,7 @@ class FDVPage(QWidget):
         )
 
     def perform_fdv_creation(
-        self, site_name, pipe_shape, pipe_size, depth_column, velocity_column
+            self, site_name, pipe_shape, pipe_size, depth_column, velocity_column
     ):
         """
         A function that creates an FDV file by calling the backend to generate the file based on the provided site name, pipe shape, pipe size, depth column, and velocity column.
@@ -674,12 +672,6 @@ class FDVPage(QWidget):
         """
         Set the pipe size in the `pipe_size_field` based on the values entered in `pipe_width_field`, `pipe_height_field`, and `r3_value_field`.
         Switch to the first tab in `tab_widget`.
-
-        Parameters:
-            None
-
-        Returns:
-            None
         """
         pipe_size = f"{self.pipe_width_field.text()},{self.pipe_height_field.text()},{self.r3_value_field.text()}"
         self.pipe_size_field.setText(pipe_size)
