@@ -12,6 +12,7 @@ from src.FDV.FDV_rainfall_converter import perform_r_conversion
 from src.calculator.r3calculator import r3_calculator
 from src.backend.timestamp import TimestampDialog
 from src.Interiem_reports.Interim_Class import InterimReportGenerator
+from src.Interiem_reports.rainfall_calcuations import RainfallTotalsGenerator
 from src.dd.dd_class import Dd
 from src.logger.logger import Logger
 
@@ -30,6 +31,7 @@ class Backend(QObject):
     rainfallCreated = Signal(str)
     rainfallError = Signal(str)
     interimReportCreated = Signal(str)
+    rainfallTotalsCreated = Signal(str)
 
     def __init__(self):
         """
@@ -736,6 +738,30 @@ class Backend(QObject):
             )
         except Exception as e:
             error_message = f"Exception occurred while creating interim report: {e}"
+            self.log_error(error_message)
+            self.errorOccurred.emit(error_message)
+        finally:
+            self.busy = False
+
+    @Slot()
+    def generate_rainfall_totals(self):
+        self.busy = True
+        try:
+            self.log_info("Generating rainfall totals")
+            if not self.final_file_path:
+                error_message = "No CSV file selected."
+                self.log_error(error_message)
+                self.errorOccurred.emit(error_message)
+                return
+
+            generator = RainfallTotalsGenerator(self)
+            daily_totals, weekly_totals = generator.generate_totals()
+
+            output_dir = os.path.join(os.path.dirname(self.final_file_path), "rainfall_totals")
+            generator.save_totals(daily_totals, weekly_totals, output_dir)
+            self.rainfallTotalsCreated.emit(f"Rainfall totals created successfully at {output_dir}")
+        except Exception as e:
+            error_message = f"Exception occurred while generating rainfall totals: {str(e)}"
             self.log_error(error_message)
             self.errorOccurred.emit(error_message)
         finally:

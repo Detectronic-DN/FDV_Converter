@@ -144,6 +144,7 @@ class FDVPage(QWidget):
 
     def __init__(self, backend, filepath, site_id, start_timestamp, end_timestamp):
         super().__init__()
+        self.rainfall_totals_button = None
         self.isBusy = None
         self.back_button = None
         self.use_r3_button = None
@@ -315,6 +316,7 @@ class FDVPage(QWidget):
         fdv_layout.addWidget(self.create_fdv_button, 5, 1)
         self.spinner.setAlignment(Qt.AlignmentFlag.AlignCenter)
         fdv_layout.addWidget(self.spinner)
+        fdv_layout.setAlignment(self.spinner, Qt.AlignmentFlag.AlignCenter)
         # Logs Display Section
         logs_frame = QFrame()
         logs_frame.setObjectName("logsFrame")
@@ -443,6 +445,25 @@ class FDVPage(QWidget):
         )
         self.create_rainfall_button.clicked.connect(self.create_rainfall)
         rainfall_layout.addWidget(self.create_rainfall_button, 2, 1)
+        rainfall_layout.addWidget(self.spinner)
+        rainfall_layout.setAlignment(self.spinner, Qt.AlignmentFlag.AlignCenter)
+
+        # create totals button
+        self.rainfall_totals_button = QPushButton("Generate Rainfall Totals")
+        self.rainfall_totals_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        self.rainfall_totals_button.clicked.connect(self.generate_rainfall_totals)
+        rainfall_layout.addWidget(self.rainfall_totals_button, 2, 0)
         # Logs Display Section
         logs_frame = QFrame()
         logs_frame.setObjectName("logsFrame")
@@ -699,17 +720,21 @@ class FDVPage(QWidget):
         self.selected_rainfall_column = self.rainfall_column_combo_box.currentText()
 
     @Slot(bool)
-    def on_busy_changed(self, is_busy) -> None:
+    def on_busy_changed(self, is_busy):
         """
         Handles the signal when the busy state changes.
         """
         self.isBusy = is_busy
         if is_busy:
-            self.fdv_logs_display.append("Processing, please wait...")
+            message = "Processing, please wait..."
+            self.fdv_logs_display.append(message)
+            self.rainfall_logs_display.append(message)
             self.spinner.show()
             self.disable_buttons()
         else:
-            self.fdv_logs_display.append("Processing complete.")
+            message = "Processing complete."
+            self.fdv_logs_display.append(message)
+            self.rainfall_logs_display.append(message)
             self.spinner.hide()
             self.enable_buttons()
 
@@ -753,8 +778,19 @@ class FDVPage(QWidget):
 
     def create_rainfall(self):
         self.on_busy_changed(True)
-        self.backend.create_rainfall(self.site_id, self.selected_rainfall_column)
-        self.on_busy_changed(False)
+        QTimer.singleShot(100, lambda: self.perform_rainfall_creation(
+            self.site_id,
+            self.selected_rainfall_column
+        ))
+
+    def perform_rainfall_creation(self, site_id, rainfall_column):
+        try:
+            self.backend.create_rainfall(site_id, rainfall_column)
+        finally:
+            self.on_busy_changed(False)
+
+    def generate_rainfall_totals(self):
+        self.backend.generate_rainfall_totals()
 
     def calculate_r3(self):
         width = float(self.pipe_width_field.text())

@@ -42,26 +42,56 @@ class InterimReportGenerator:
 
     def calculate_values(self) -> pd.DataFrame:
         """
-        Calculates additional values for the DataFrame based on the monitor type.
-
+        Calculates additional values for the DataFrame based on the monitor type,
+        adhering to the channel_id selection rules extracted from column names.
         Returns:
             pd.DataFrame: The DataFrame with calculated values.
         """
         try:
             if self.monitor_type == "Flow":
-                flow_column = (
-                    self.columns["flow"][0][0] if self.columns["flow"] else None
-                )
-                if flow_column:
-                    self.df["L"] = self.df[flow_column] * self.interval_seconds
-                    self.df["m3"] = self.df["L"] / 1000
+                flow_columns = self.columns.get("flow", [])
+                # Identify the correct flow column based on the channel_id
+                flow_column = None
+                for col in flow_columns:
+                    channel_id = col.split('_')[1].split('|')[0]
+                    if channel_id == '9':
+                        flow_column = col
+                        break
+                    elif channel_id == '5' and not flow_column:
+                        flow_column = col
+
+                if not flow_column:
+                    flow_column = flow_columns[0]
+
+                self.backend.log_info(f"Using flow column: {flow_column}")
+
+                # Calculate values based on chosen flow column
+                self.df["L"] = self.df[flow_column] * self.interval_seconds
+                self.df["m3"] = self.df["L"] / 1000
+
             elif self.monitor_type == "Depth":
-                # Add depth specific calculations if needed
-                pass
+                depth_columns = self.columns.get("depth", [])
+                if depth_columns:
+                    depth_column = depth_columns[0]
+                    self.backend.log_info(f"Using depth column: {depth_column}")
+                    # Add depth specific calculations if needed
+                else:
+                    self.backend.log_warning("No depth column found for Depth monitor type")
+
             elif self.monitor_type == "Rainfall":
-                # Add rainfall specific calculations if needed
-                pass
+                rainfall_columns = self.columns.get("rainfall", [])
+                if rainfall_columns:
+                    rainfall_column = rainfall_columns[0]
+                    self.backend.log_info(f"Using rainfall column: {rainfall_column}")
+                    # Add rainfall specific calculations if needed
+                else:
+                    self.backend.log_warning("No rainfall column found for Rainfall monitor type")
+
+            else:
+                self.backend.log_warning(f"Unsupported monitor type: {self.monitor_type}")
+
             return self.df
+
         except KeyError as e:
             self.backend.log_error(f"KeyError in calculate_values: {e}")
             raise
