@@ -7,6 +7,11 @@ from src.logger.logger import logger
 
 
 def main():
+    """
+    A function that initializes the application,
+    connects signals, shows the main window, and
+    handles exceptions.
+    """
     try:
         app = QApplication(sys.argv)
         main_window = MainWindow()
