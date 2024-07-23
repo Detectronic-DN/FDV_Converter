@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, QPoint, Slot, Signal, QThread
-from PySide6.QtGui import QPainter, QColor, QPen, QMovie, QFont, QMouseEvent
+from PySide6.QtGui import QPainter, QColor, QPen, QMovie, QMouseEvent
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -8,12 +8,9 @@ from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
     QGroupBox,
-    QTextEdit,
     QFileDialog,
     QStackedWidget,
     QGridLayout,
-    QFrame,
-    QMessageBox,
 )
 
 from src.logger.logger import Logger
