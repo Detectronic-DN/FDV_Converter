@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QLineEdit,
+    QTextEdit,
     QPushButton,
     QHBoxLayout,
     QGroupBox,
@@ -27,7 +28,6 @@ class ClickableLabel(QLabel):
 
 
 class SiteDetailsPage(QWidget):
-    back_button_clicked = Signal()
     continue_to_next = Signal()
     login_requested = Signal()
     open_login_page = Signal()
@@ -39,7 +39,6 @@ class SiteDetailsPage(QWidget):
         super().__init__()
 
         self.logs_display = None
-        self.back_button = None
         self.end_timestamp_label = None
         self.site_name_label = None
         self.start_timestamp_label = None
@@ -49,6 +48,9 @@ class SiteDetailsPage(QWidget):
         self.backend = backend
         self.stack = stack
         self.logger = Logger(__name__)
+        Logger.set_ui_logging(True)
+        Logger.set_console_logging(False)
+        # Logger.connect_log_signal(self.update_log_display)
         self.spinner = None
         self.username_label = None
 
@@ -190,22 +192,16 @@ class SiteDetailsPage(QWidget):
         site_details_groupbox.setStyleSheet(
             """
         QGroupBox {
-            border: 1px solid gray;
-            border-color: #FF17365D;
-            margin-top: 27px;
+            border: 1px solid #000000;
+            border-radius: 5px;
+            margin-top: 10px;
             font-size: 14px;
-            border-bottom-left-radius: 15px;
-            border-bottom-right-radius: 15px;
         }
         
         QGroupBox::title {
             subcontrol-origin: margin;
-            subcontrol-position: top left;
-            border-top-left-radius: 15px;
-            border-top-right-radius: 15px;
-            padding: 5px;
-            background-color: #FF17365D;
-            color: rgb(255, 255, 255);
+            left: 10px;
+            padding: 0 3px 0 3px;
         }
 
         """
@@ -254,15 +250,15 @@ class SiteDetailsPage(QWidget):
         continue_button.setStyleSheet(
             button_style.replace("#5a67d8", "#404660").replace("#4c51bf", "#3A4059")
         )
-        continue_button.setCursor(Qt.PointingHandCursor)
+        continue_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
         # Custom paint event for continue button (arrow)
-        def paintEvent(event):
+        def paint_event(event):
             QPushButton.paintEvent(continue_button, event)
             painter = QPainter(continue_button)
-            painter.setRenderHint(QPainter.Antialiasing)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             painter.setPen(
-                QPen(QColor("#fff"), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+                QPen(QColor("#fff"), 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
             )
             arrow_size = 10
             x = continue_button.width() - 25  # Adjust arrow position
@@ -275,7 +271,7 @@ class SiteDetailsPage(QWidget):
                 QPoint(x + arrow_size, y), QPoint(x + arrow_size - 5, y + 5)
             )
 
-        continue_button.paintEvent = paintEvent
+        continue_button.paintEvent = paint_event
         continue_button.clicked.connect(self.continue_to_next_page)
 
         # Add buttons to the grid layout
@@ -294,28 +290,9 @@ class SiteDetailsPage(QWidget):
 
         layout.addLayout(action_buttons_layout)
 
-        # Back Button
-        back_button_layout = QHBoxLayout()
-        self.back_button = QPushButton("Back")
-        self.back_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #a0aec0;
-                color: #1a202c;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 8px;
-            }
-            QPushButton:hover {
-                background-color: #718096;
-            }
-        """
-        )
-        self.back_button.clicked.connect(self.on_back_button_clicked)
-        back_button_layout.addWidget(
-            self.back_button, alignment=Qt.AlignmentFlag.AlignLeft
-        )
-        layout.addLayout(back_button_layout)
+        # Logs Display Section
+        logs_frame = self.setup_logs_display()
+        layout.addWidget(logs_frame)
 
         self.setLayout(layout)
 
@@ -330,7 +307,7 @@ class SiteDetailsPage(QWidget):
         movie = QMovie("icons/spinner.gif")
         self.spinner.setMovie(movie)
         movie.start()
-        self.spinner.setAlignment(Qt.AlignCenter)
+        self.spinner.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.spinner.setFixedSize(50, 50)
         self.spinner.hide()
 
@@ -406,12 +383,6 @@ class SiteDetailsPage(QWidget):
         self.continue_to_next.emit()
         self.backend.retrieve_columns()
 
-    @Slot()
-    def on_back_button_clicked(self):
-        """Handles the back button click event."""
-        self.back_button_clicked.emit()
-        self.close_threads()
-
     @Slot(str, str, str, str)
     def on_site_details_retrieved(
         self, site_id, site_name, start_timestamp, end_timestamp
@@ -470,9 +441,55 @@ class SiteDetailsPage(QWidget):
         self.filePath = ""
 
     def disable_buttons(self):
-        self.back_button.setEnabled(False)
         self.site_id_input.setEnabled(False)
 
     def enable_buttons(self):
-        self.back_button.setEnabled(True)
         self.site_id_input.setEnabled(True)
+
+    def setup_logs_display(self):
+        logs_frame = QGroupBox("Logs")
+        logs_frame.setStyleSheet(
+            """
+            QGroupBox {
+                border: 1px solid #000000;
+                border-radius: 5px;
+                margin-top: 15px;
+                font-size: 14px;
+            }
+
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                top: -7px;
+                padding: 0 3px 0 3px;
+                background-color: white;
+            }
+            """
+        )
+
+        logs_layout = QVBoxLayout()
+
+        self.logs_display = QTextEdit()
+        self.logs_display.setReadOnly(True)
+        self.logs_display.setStyleSheet(
+            """
+            QTextEdit {
+                background-color: #F3F4F6;
+                border: none;
+                font-size: 12px;
+            }
+            """
+        )
+
+        logs_layout.addWidget(self.logs_display)
+        logs_frame.setLayout(logs_layout)
+
+        return logs_frame
+
+    @Slot(str)
+    def update_log_display(self, message: str) -> None:
+        """
+        Updates the log display with new log messages.
+        """
+        if self.logs_display:
+            self.logs_display.append(message)
