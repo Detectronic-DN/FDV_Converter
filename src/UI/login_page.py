@@ -91,7 +91,7 @@ class LoginPage(QWidget):
                     }
                 """)
         close_button.clicked.connect(self.navigate_to_site_details.emit)
-        form_layout.addWidget(close_button, 0, Qt.AlignRight)
+        form_layout.addWidget(close_button, 0, Qt.AlignmentFlag.AlignRight)
 
         # Logo
         logo_label = QLabel()
@@ -99,14 +99,14 @@ class LoginPage(QWidget):
             "icons/Detectronic-logo.png"
         )
         logo_label.setPixmap(
-            logo_pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            logo_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         )
-        logo_label.setAlignment(Qt.AlignCenter)
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         form_layout.addWidget(logo_label)
 
         # Welcome text
         welcome_label = QLabel("Welcome back")
-        welcome_label.setAlignment(Qt.AlignCenter)
+        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         welcome_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #333;")
         form_layout.addWidget(welcome_label)
 
@@ -188,9 +188,9 @@ class LoginPage(QWidget):
         form_layout.addWidget(next_button)
 
         # Add the form layout to the login frame
-        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        layout.addWidget(self.login_frame, 0, Qt.AlignCenter)
-        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        layout.addWidget(self.login_frame, 0, Qt.AlignmentFlag.AlignCenter)
+        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
 
     def connect_signals(self) -> None:
         """

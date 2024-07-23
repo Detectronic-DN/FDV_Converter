@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         main_layout = QVBoxLayout(central_widget)
 
         # Create a splitter to separate the main content and log display
-        splitter = QSplitter(Qt.Vertical)
+        splitter = QSplitter(Qt.Orientation.Vertical)
 
         # Create a stacked widget for navigation
         self.stack = QStackedWidget()
@@ -68,7 +68,6 @@ class MainWindow(QMainWindow):
         self.site_details_page.open_login_page.connect(self.show_login_page)
         self.login_page.login_successful.connect(self.show_site_details_page)
         self.login_page.navigate_to_site_details.connect(self.show_site_details_page)
-        self.site_details_page.back_button_clicked.connect(self.show_login_page)
         self.site_details_page.continue_to_next.connect(self.show_fdv_page)
 
         # Apply the light theme stylesheet
