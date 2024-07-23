@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QGridLayout,
     QFrame,
+    QMessageBox,
 )
 
 from src.logger.logger import Logger
@@ -101,9 +102,12 @@ class SiteDetailsPage(QWidget):
         welcome_text.setStyleSheet("font-size: 18px; font-weight: bold; color: #333;")
         self.username_label = ClickableLabel("User")  # Use ClickableLabel
         self.username_label.setStyleSheet(
-            "font-size: 18px; font-weight: bold; color: #3B82F6; text-decoration: underline; cursor: pointer;")
+            "font-size: 18px; font-weight: bold; color: #3B82F6; text-decoration: underline; cursor: pointer;"
+        )
         self.username_label.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.username_label.clicked.connect(self.open_login_page.emit)  # Connect to new signal
+        self.username_label.clicked.connect(
+            self.open_login_page.emit
+        )  # Connect to new signal
 
         welcome_layout.addWidget(welcome_text)
         welcome_layout.addWidget(self.username_label)
@@ -413,7 +417,7 @@ class SiteDetailsPage(QWidget):
 
     @Slot(str, str, str, str)
     def on_site_details_retrieved(
-            self, site_id, site_name, start_timestamp, end_timestamp
+        self, site_id, site_name, start_timestamp, end_timestamp
     ) -> None:
         """
         Handles the signal when site details are retrieved.
