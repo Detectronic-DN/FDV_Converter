@@ -9,10 +9,10 @@ from PySide6.QtWidgets import QDialog
 
 from src.FDV.FDV_converter import fdv_conversion
 from src.FDV.FDV_rainfall_converter import perform_r_conversion
-from src.calculator.r3calculator import r3_calculator
-from src.backend.timestamp import TimestampDialog
 from src.Interiem_reports.Interim_Class import InterimReportGenerator
 from src.Interiem_reports.rainfall_calcuations import RainfallTotalsGenerator
+from src.backend.timestamp import TimestampDialog
+from src.calculator.r3calculator import r3_calculator
 from src.dd.dd_class import Dd
 from src.logger.logger import Logger
 
@@ -140,9 +140,7 @@ class Backend(QObject):
         """
         self.busy = True
         try:
-            self.emit_log_message(
-                f"Downloading CSV for site {site_id} to {folder_path}"
-            )
+            self.logger.info(f"Downloading CSV for site {site_id} to {folder_path}")
             result = self.dd_instance.download_csv_file(site_id, folder_path)
 
             if result[0].startswith("Error"):
@@ -203,7 +201,7 @@ class Backend(QObject):
         raise ValueError("Timestamp column not found.")
 
     def get_column_names_and_indices(
-        self, file_name: str, df: pd.DataFrame
+            self, file_name: str, df: pd.DataFrame
     ) -> Dict[str, list]:
         """
         Extract and validate column names and their indices based on the monitor type identified from the file name.
@@ -312,7 +310,7 @@ class Backend(QObject):
             else:
                 self.site_id = "Unknown"
                 self.channel_id = "Unknown"
-                self.log_warning(
+                self.logger.error(
                     "Could not extract site and channel info from depth/level column name"
                 )
         elif self.monitor_type == "Flow" and column_mapping["flow"]:
@@ -324,7 +322,7 @@ class Backend(QObject):
         else:
             self.site_id = "Unknown"
             self.channel_id = "Unknown"
-            self.log_warning("Could not determine site and channel info")
+            self.logger.error("Could not determine site and channel info")
 
         return column_mapping
 
@@ -370,7 +368,7 @@ class Backend(QObject):
 
             if self.site_id:
                 # If we found a site ID, everything after it is potentially the site name
-                site_name_parts = name_parts[name_parts.index(self.site_id) + 1 :]
+                site_name_parts = name_parts[name_parts.index(self.site_id) + 1:]
                 if site_name_parts:
                     self.site_name = " ".join(site_name_parts)
             else:
@@ -397,7 +395,7 @@ class Backend(QObject):
             else:
                 # If we still don't have a site_id, use the whole filename as site_name
                 self.site_name = site_name
-                self.log_warning(
+                self.logger.error(
                     f"Could not determine site ID. Using full filename as site name: {self.site_name}"
                 )
 
@@ -518,7 +516,7 @@ class Backend(QObject):
 
             # Apply the timestamp mask
             mask = (df[time_col] >= pd.to_datetime(self.modified_start_timestamp)) & (
-                df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
+                    df[time_col] <= pd.to_datetime(self.modified_end_timestamp)
             )
             modified_df = df.loc[mask]
 
@@ -542,12 +540,12 @@ class Backend(QObject):
 
     @Slot(str, str, str, str, str)
     def create_fdv(
-        self,
-        site_name: str,
-        pipe_type: str,
-        pipe_size_param: str,
-        depth_col: Optional[str],
-        velocity_col: Optional[str],
+            self,
+            site_name: str,
+            pipe_type: str,
+            pipe_size_param: str,
+            depth_col: Optional[str],
+            velocity_col: Optional[str],
     ) -> None:
         """
         Create an FDV file.
@@ -695,11 +693,11 @@ class Backend(QObject):
         """
         Creates interim reports.
 
-        This function generates interim reports based on the selected CSV file. It first checks if a CSV file is selected,
-        and if not, it logs an error and returns. If a CSV file is selected, it creates an `InterimReportGenerator`
-        object and calls its `generate_report` method to generate the reports. The generated reports are then saved
-        to a directory named "final_report" in the same directory as the selected CSV file. Finally, it emits a signal
-        indicating that the final report has been created and logs any exceptions that occur.
+        This function generates interim reports based on the selected CSV file. It first checks if a CSV file is
+        selected, and if not, it logs an error and returns. If a CSV file is selected, it creates an
+        `InterimReportGenerator` object and calls its `generate_report` method to generate the reports. The generated
+        reports are then saved to a directory named "final_report" in the same directory as the selected CSV file.
+        Finally, it emits a signal indicating that the final report has been created and logs any exceptions that occur.
 
         Parameters:
             self (Backend): The Backend object.
@@ -738,9 +736,9 @@ class Backend(QObject):
     @Slot()
     def generate_rainfall_totals(self):
         """
-        A function to generate rainfall totals, utilizing a RainfallTotalsGenerator to calculate daily and weekly totals.
-        Emits a signal with the path where the rainfall totals are saved upon successful creation.
-        Handles exceptions and updates the busy status accordingly.
+        A function to generate rainfall totals, utilizing a RainfallTotalsGenerator to calculate daily and weekly
+        totals. Emits a signal with the path where the rainfall totals are saved upon successful creation. Handles
+        exceptions and updates the busy status accordingly.
         """
         self.busy = True
         try:
