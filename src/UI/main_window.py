@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QTextEdit,
     QSplitter,
+    QGroupBox
 )
 
 from src.UI.fdv_page import FDVPage
@@ -22,6 +23,7 @@ class MainWindow(QMainWindow):
         Initializes the MainWindow with UI components and navigation.
         """
         super().__init__()
+        self.log_text_edit = None
         self.setWindowTitle("FDV App")
         self.setGeometry(100, 100, 640, 480)
 
@@ -51,13 +53,8 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self.stack)
 
         # Create and set up the log widget
-        self.log_widget = QTextEdit()
-        self.log_widget.setReadOnly(True)
-        self.log_widget.setMaximumHeight(150)  # Limit the height of the log display
-
-        # Add the log widget to the splitter
+        self.log_widget = self.setup_logs_display()
         splitter.addWidget(self.log_widget)
-
         # Add the splitter to the main layout
         main_layout.addWidget(splitter)
 
@@ -83,12 +80,54 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon("icons/calculation.ico"))
         self.show()
 
+    def setup_logs_display(self):
+        logs_frame = QGroupBox("Logs")
+        logs_frame.setStyleSheet(
+            """
+            QGroupBox {
+                border: 1px solid #000000;
+                border-radius: 5px;
+                margin-top: 10px;
+                font-size: 14px;
+            }
+
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 3px 0 3px;
+            }
+            """
+        )
+        logs_layout = QVBoxLayout()
+
+        self.log_text_edit = QTextEdit()  # Store as an instance variable
+        self.log_text_edit.setReadOnly(True)
+        self.log_text_edit.setMinimumHeight(150)  # or any other appropriate value
+        self.log_text_edit.setStyleSheet(
+            """
+            QTextEdit {
+                background-color: #F3F4F6;
+                border: none;
+                font-size: 12px;
+            }
+            """
+        )
+
+        logs_layout.addWidget(self.log_text_edit)
+        logs_frame.setLayout(logs_layout)
+
+        return logs_frame
+
     @Slot(str)
     def update_log_display(self, message: str) -> None:
         """
         Updates the log display with new log messages.
         """
-        self.log_widget.append(message)
+        if hasattr(self, 'log_text_edit'):
+            self.log_text_edit.append(message)
+            self.log_text_edit.verticalScrollBar().setValue(
+                self.log_text_edit.verticalScrollBar().maximum()
+            )
 
     def show_site_details_page(self) -> None:
         """
@@ -145,3 +184,7 @@ class MainWindow(QMainWindow):
         Sets the visibility of the log widget.
         """
         self.log_widget.setVisible(visible)
+
+    def clear_logs(self):
+        if hasattr(self, 'log_text_edit'):
+            self.log_text_edit.clear()

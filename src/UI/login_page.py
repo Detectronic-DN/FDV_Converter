@@ -78,7 +78,8 @@ class LoginPage(QWidget):
         form_layout.setSpacing(15)
 
         close_button = QPushButton("×")
-        close_button.setStyleSheet("""
+        close_button.setStyleSheet(
+            """
                     QPushButton {
                         background-color: transparent;
                         color: #888;
@@ -89,17 +90,21 @@ class LoginPage(QWidget):
                     QPushButton:hover {
                         color: #333;
                     }
-                """)
+                """
+        )
         close_button.clicked.connect(self.navigate_to_site_details.emit)
         form_layout.addWidget(close_button, 0, Qt.AlignmentFlag.AlignRight)
 
         # Logo
         logo_label = QLabel()
-        logo_pixmap = QPixmap(
-            "icons/Detectronic-logo.png"
-        )
+        logo_pixmap = QPixmap("src/UI/icons/Detectronic-logo.png")
         logo_label.setPixmap(
-            logo_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            logo_pixmap.scaled(
+                100,
+                100,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
         )
         logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         form_layout.addWidget(logo_label)
@@ -115,7 +120,8 @@ class LoginPage(QWidget):
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
 
         for input_field in (self.username_input, self.password_input):
-            input_field.setStyleSheet("""
+            input_field.setStyleSheet(
+                """
                         QLineEdit {
                             padding: 10px;
                             background-color: #F3F4F6;
@@ -128,7 +134,8 @@ class LoginPage(QWidget):
                             outline: none;
                             border: 1px solid #3B82F6;
                         }
-                    """)
+                    """
+            )
             form_layout.addWidget(input_field)
 
         # Show Password Checkbox
@@ -145,10 +152,10 @@ class LoginPage(QWidget):
                 background-color: white;
             }
             QCheckBox::indicator:unchecked {
-                image: url(icons/unchecked.png);
+                image: url(src/UI/icons/unchecked.png);
             }
             QCheckBox::indicator:checked {
-                image: url(icons/checkbox.png);
+                image: url(src/UI/icons/checkbox.png);
             }
                         
             """
@@ -188,9 +195,17 @@ class LoginPage(QWidget):
         form_layout.addWidget(next_button)
 
         # Add the form layout to the login frame
-        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        layout.addItem(
+            QSpacerItem(
+                20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+            )
+        )
         layout.addWidget(self.login_frame, 0, Qt.AlignmentFlag.AlignCenter)
-        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding))
+        layout.addItem(
+            QSpacerItem(
+                20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+            )
+        )
 
     def connect_signals(self) -> None:
         """

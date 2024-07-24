@@ -5,7 +5,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QLineEdit,
-    QTextEdit,
     QPushButton,
     QHBoxLayout,
     QGroupBox,
@@ -89,26 +88,25 @@ class SiteDetailsPage(QWidget):
         Initializes the UI components of the site details page.
         """
         layout = QVBoxLayout()
-        layout.setSpacing(10)
-        layout.setContentsMargins(20, 20, 20, 20)
+        # layout.setSpacing(5)
+        layout.setContentsMargins(20, 0, 20, 20)
 
         # Welcome section
         welcome_layout = QHBoxLayout()
         welcome_text = QLabel("Hello")
-        welcome_text.setStyleSheet("font-size: 18px; font-weight: bold; color: #333;")
-        self.username_label = ClickableLabel("User")  # Use ClickableLabel
+        welcome_text.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.username_label = ClickableLabel("User")
         self.username_label.setStyleSheet(
-            "font-size: 18px; font-weight: bold; color: #3B82F6; text-decoration: underline; cursor: pointer;"
+            "font-size: 18px; font-weight: bold; color: #3B82F6; text-decoration: underline; "
         )
         self.username_label.setCursor(Qt.CursorShape.PointingHandCursor)
         self.username_label.clicked.connect(
             self.open_login_page.emit
-        )  # Connect to new signal
+        )
 
         welcome_layout.addWidget(welcome_text)
         welcome_layout.addWidget(self.username_label)
-        welcome_layout.addStretch()  # This pushes the welcome message to the left
-
+        welcome_layout.addStretch()
         layout.addLayout(welcome_layout)
 
         # Site ID Input Section
@@ -255,7 +253,13 @@ class SiteDetailsPage(QWidget):
             painter = QPainter(continue_button)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             painter.setPen(
-                QPen(QColor("#fff"), 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+                QPen(
+                    QColor("#fff"),
+                    2,
+                    Qt.PenStyle.SolidLine,
+                    Qt.PenCapStyle.RoundCap,
+                    Qt.PenJoinStyle.RoundJoin,
+                )
             )
             arrow_size = 10
             x = continue_button.width() - 25  # Adjust arrow position
@@ -284,13 +288,7 @@ class SiteDetailsPage(QWidget):
         continue_button.setFixedHeight(50)
 
         layout.addLayout(action_buttons_layout)
-
         layout.addLayout(action_buttons_layout)
-
-        # Logs Display Section
-        logs_frame = self.setup_logs_display()
-        layout.addWidget(logs_frame)
-
         self.setLayout(layout)
 
     def update_username(self, username: str):
@@ -301,7 +299,7 @@ class SiteDetailsPage(QWidget):
         setups the spinner animation
         """
         self.spinner = QLabel(self)
-        movie = QMovie("icons/spinner.gif")
+        movie = QMovie("src/UI/icons/spinner.gif")
         self.spinner.setMovie(movie)
         movie.start()
         self.spinner.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -444,53 +442,3 @@ class SiteDetailsPage(QWidget):
 
     def enable_buttons(self):
         self.site_id_input.setEnabled(True)
-
-    def setup_logs_display(self):
-        logs_frame = QGroupBox("Logs")
-        logs_frame.setStyleSheet(
-            """
-            QGroupBox {
-                border: 1px solid #000000;
-                border-radius: 5px;
-                margin-top: 15px;
-                font-size: 14px;
-            }
-
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                top: -7px;
-                padding: 0 3px 0 3px;
-                background-color: white;
-            }
-            """
-        )
-
-        logs_layout = QVBoxLayout()
-
-        self.logs_display = QTextEdit()
-        self.logs_display.setReadOnly(True)
-        self.logs_display.setStyleSheet(
-            """
-            QTextEdit {
-                background-color: #F3F4F6;
-                border: none;
-                font-size: 12px;
-            }
-            """
-        )
-
-        logs_layout.addWidget(self.logs_display)
-        logs_frame.setLayout(logs_layout)
-
-        Logger.connect_log_signal(self.update_log_display)
-
-        return logs_frame
-
-    @Slot(str)
-    def update_log_display(self, message: str) -> None:
-        """
-        Updates the log display with new log messages.
-        """
-        if self.logs_display:
-            self.logs_display.append(message)
