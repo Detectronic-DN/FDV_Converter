@@ -141,8 +141,7 @@ class SiteDetailsPage(QWidget):
             QPushButton {
                 border: 1px solid #bbbbbb;
                 border-radius: 8px;
-                background: 
-                    qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(128, 128, 255), stop:1 rgb(183, 128, 255));
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(128, 128, 255), stop:1 rgb(183, 128, 255));
             }
             QPushButton:hover {
                 background-color: #B780FF;
