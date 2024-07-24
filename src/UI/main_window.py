@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
+        self.logger = Logger(__name__)
 
         main_layout = QVBoxLayout(central_widget)
 
@@ -102,7 +103,9 @@ class MainWindow(QMainWindow):
         """
         Shows the login page.
         """
-        if self.login_page not in [self.stack.widget(i) for i in range(self.stack.count())]:
+        if self.login_page not in [
+            self.stack.widget(i) for i in range(self.stack.count())
+        ]:
             self.stack.addWidget(self.login_page)
         self.stack.setCurrentWidget(self.login_page)
         self.set_log_visibility(False)

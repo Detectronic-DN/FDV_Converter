@@ -48,9 +48,6 @@ class SiteDetailsPage(QWidget):
         self.backend = backend
         self.stack = stack
         self.logger = Logger(__name__)
-        Logger.set_ui_logging(True)
-        Logger.set_console_logging(False)
-        # Logger.connect_log_signal(self.update_log_display)
         self.spinner = None
         self.username_label = None
 
@@ -324,6 +321,7 @@ class SiteDetailsPage(QWidget):
             self.clear_site_details()
             # Run the CSV or Excel upload in a separate thread
             self.upload_worker.upload_csv_file.emit(file_path)
+            self.logger.info(f"File selected: {file_path}")
 
     def open_folder_dialog(self) -> None:
         """
@@ -350,6 +348,7 @@ class SiteDetailsPage(QWidget):
                 self.clear_site_details()
                 # Run the CSV download in a separate thread
                 self.worker.download_csv_file.emit(site_id, self.folder_path)
+                self.logger.info(f"Downloading csv for site ID: {site_id}")
             else:
                 self.logger.warning("Folder selection cancelled.")
         else:
@@ -483,6 +482,8 @@ class SiteDetailsPage(QWidget):
 
         logs_layout.addWidget(self.logs_display)
         logs_frame.setLayout(logs_layout)
+
+        Logger.connect_log_signal(self.update_log_display)
 
         return logs_frame
 
