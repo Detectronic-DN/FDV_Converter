@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QIcon, QAction
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -47,7 +47,6 @@ class LoginPage(QWidget):
         super().__init__()
 
         self.error_label = QLabel("")
-        self.show_password_checkbox = None
         self.password_input = QLineEdit()
         self.username_input = QLineEdit()
         self.login_frame = QFrame()
@@ -55,6 +54,8 @@ class LoginPage(QWidget):
         self.logger = Logger(__name__)
         self.username: str = ""
         self.password: str = ""
+        self.toggle_password_action = None
+        self.remember_me_checkbox = None
 
         self.init_ui()
         self.connect_signals()
@@ -68,7 +69,6 @@ class LoginPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Create the frame for the login form without visible borders
         self.login_frame.setFrameShape(QFrame.Shape.NoFrame)
         self.login_frame.setFixedSize(500, 400)
         self.login_frame.setObjectName("loginFrame")
@@ -80,17 +80,17 @@ class LoginPage(QWidget):
         close_button = QPushButton("×")
         close_button.setStyleSheet(
             """
-                    QPushButton {
-                        background-color: transparent;
-                        color: #888;
-                        font-size: 20px;
-                        font-weight: bold;
-                        border: none;
-                    }
-                    QPushButton:hover {
-                        color: #333;
-                    }
-                """
+            QPushButton {
+                background-color: transparent;
+                color: #888;
+                font-size: 20px;
+                font-weight: bold;
+                border: none;
+            }
+            QPushButton:hover {
+                color: #333;
+            }
+            """
         )
         close_button.clicked.connect(self.navigate_to_site_details.emit)
         form_layout.addWidget(close_button, 0, Qt.AlignmentFlag.AlignRight)
@@ -122,25 +122,34 @@ class LoginPage(QWidget):
         for input_field in (self.username_input, self.password_input):
             input_field.setStyleSheet(
                 """
-                        QLineEdit {
-                            padding: 10px;
-                            background-color: #F3F4F6;
-                            border: none;
-                            border-radius: 6px;
-                            font-size: 14px;
-                        }
-                        QLineEdit:focus {
-                            background-color: #E5E7EB;
-                            outline: none;
-                            border: 1px solid #3B82F6;
-                        }
-                    """
+                QLineEdit {
+                    padding: 10px;
+                    background-color: #F3F4F6;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 14px;
+                }
+                QLineEdit:focus {
+                    background-color: #E5E7EB;
+                    outline: none;
+                    border: 1px solid #3B82F6;
+                }
+                """
             )
             form_layout.addWidget(input_field)
 
-        # Show Password Checkbox
-        self.show_password_checkbox = QCheckBox("Show Password")
-        self.show_password_checkbox.setStyleSheet(
+        # Password visibility toggle
+        self.toggle_password_action = QAction(self)
+        self.toggle_password_action.setIcon(QIcon("src/UI/icons/eye-close.png"))
+        self.toggle_password_action.triggered.connect(self.toggle_password_visibility)
+        self.password_input.addAction(
+            self.toggle_password_action,
+            QLineEdit.ActionPosition.TrailingPosition
+        )
+
+        # Remember Me checkbox
+        self.remember_me_checkbox = QCheckBox("Remember Me")
+        self.remember_me_checkbox.setStyleSheet(
             """
             QCheckBox { 
                 font-size: 12px;
@@ -157,15 +166,9 @@ class LoginPage(QWidget):
             QCheckBox::indicator:checked {
                 image: url(src/UI/icons/checkbox.png);
             }
-                        
             """
         )
-        self.show_password_checkbox.setEnabled(True)
-        self.show_password_checkbox.stateChanged.connect(
-            self.toggle_password_visibility
-        )
-        self.show_password_checkbox.raise_()
-        form_layout.addWidget(self.show_password_checkbox)
+        form_layout.addWidget(self.remember_me_checkbox)
 
         # Error message display
         self.error_label.setStyleSheet("color: red; font-size: 14px;")
@@ -173,9 +176,9 @@ class LoginPage(QWidget):
         self.error_label.setVisible(False)
         form_layout.addWidget(self.error_label)
 
-        # Buttons for further actions
-        next_button = QPushButton("Log In")
-        next_button.setStyleSheet(
+        # Login button
+        login_button = QPushButton("Log In")
+        login_button.setStyleSheet(
             """
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #6366F1, stop:1 #3B82F6);
@@ -190,11 +193,9 @@ class LoginPage(QWidget):
             }
             """
         )
-        next_button.clicked.connect(self.login)
+        login_button.clicked.connect(self.login)
+        form_layout.addWidget(login_button)
 
-        form_layout.addWidget(next_button)
-
-        # Add the form layout to the login frame
         layout.addItem(
             QSpacerItem(
                 20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
@@ -220,10 +221,12 @@ class LoginPage(QWidget):
         Toggles the visibility of the password field.
         """
         try:
-            if self.show_password_checkbox.isChecked():
+            if self.password_input.echoMode() == QLineEdit.EchoMode.Password:
                 self.password_input.setEchoMode(QLineEdit.EchoMode.Normal)
+                self.toggle_password_action.setIcon(QIcon("src/UI/icons/eye.png"))
             else:
                 self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+                self.toggle_password_action.setIcon(QIcon("src/UI/icons/eye-close.png"))
         except Exception as e:
             self.logger.error(f"Error toggling password visibility: {e}")
 
@@ -236,11 +239,12 @@ class LoginPage(QWidget):
 
     def login(self) -> None:
         """
-        Handles the next action, including validation and saving login details.
+        Handles the login action, including validation and saving login details.
         """
         try:
             self.username = self.username_input.text()
             self.password = self.password_input.text()
+            remember_me = self.remember_me_checkbox.isChecked()
             validation_error = validate_credentials(self.username, self.password)
 
             if validation_error:
@@ -248,10 +252,10 @@ class LoginPage(QWidget):
                 self.error_label.setVisible(True)
                 self.logger.error(f"Validation error: {validation_error}")
             else:
-                self.backend.save_login_details(self.username, self.password)
+                self.backend.save_login_details(self.username, self.password, remember_me)
                 self.login_successful.emit()
         except Exception as e:
-            self.logger.error(f"Error in next action: {e}")
+            self.logger.error(f"Error in login action: {e}")
             self.error_label.setText("An error occurred. Please try again.")
             self.error_label.setVisible(True)
 
@@ -260,13 +264,13 @@ class LoginPage(QWidget):
         Load the credentials from the backend.
         """
         try:
-            username, password = self.backend.get_login_details()
-            if username:
+            username, password, remember_me = self.backend.get_login_details()
+            if remember_me:
                 self.username_input.setText(username)
-            if password:
                 self.password_input.setText(password)
+                self.remember_me_checkbox.setChecked(True)
         except Exception as e:
-            self.logger.error(f"Failed to Load the credentials: {e}")
+            self.logger.error(f"Failed to load saved credentials: {e}")
 
     def on_busy_changed(self, is_busy: bool) -> None:
         """
